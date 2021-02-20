@@ -2512,9 +2512,9 @@ public class Wallet extends BaseTaggableObject
                     // so the exact nature of the mutation can be examined.
                     log.warn("Saw two pending transactions double spend each other");
                     log.warn("  offending input is input {}", tx.getInputs().indexOf(input));
-                    log.warn("{}: {}", tx.getTxId(), Utils.HEX.encode(tx.unsafeBitcoinSerialize()));
+                    log.warn("{}: {}", tx.getTxId(), tx.toHexString());
                     Transaction other = output.getSpentBy().getParentTransaction();
-                    log.warn("{}: {}", other.getTxId(), Utils.HEX.encode(other.unsafeBitcoinSerialize()));
+                    log.warn("{}: {}", other.getTxId(), other.toHexString());
                 }
             } else if (result == TransactionInput.ConnectionResult.SUCCESS) {
                 // Otherwise we saw a transaction spend our coins, but we didn't try and spend them ourselves yet.
@@ -4506,13 +4506,14 @@ public class Wallet extends BaseTaggableObject
 
     /**
      * Reduce the value of the first output of a transaction to pay the given feePerKb as appropriate for its size.
+    * If ensureMinRequiredFee is true, feePerKb is set to at least {@link Transaction#REFERENCE_DEFAULT_MIN_TX_FEE}.
      */
     private boolean adjustOutputDownwardsForFee(Transaction tx, CoinSelection coinSelection, Coin feePerKb,
                                                 boolean ensureMinRequiredFee) {
+        if (ensureMinRequiredFee && feePerKb.compareTo(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE) < 0)
+            feePerKb = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE;
         final int size = tx.getMessageSize() + estimateBytesForSigning(coinSelection);
         Coin fee = feePerKb.multiply(size).divide(1000);
-        if (ensureMinRequiredFee && fee.compareTo(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE) < 0)
-            fee = Transaction.REFERENCE_DEFAULT_MIN_TX_FEE;
         TransactionOutput output = tx.getOutput(0);
         output.setValue(output.getValue().subtract(fee));
         return !output.isDust();
@@ -5107,7 +5108,7 @@ public class Wallet extends BaseTaggableObject
     private boolean isTxOutputBloomFilterable(TransactionOutput out) {
         Script script = out.getScriptPubKey();
         boolean isScriptTypeSupported = ScriptPattern.isP2PK(script) || ScriptPattern.isP2SH(script);
-        return (isScriptTypeSupported && myUnspents.contains(out)) || watchedScripts.contains(script);
+        return (isScriptTypeSupported && out.isMine(this)) || watchedScripts.contains(script);
     }
 
     /**

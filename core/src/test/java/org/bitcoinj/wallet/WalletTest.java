@@ -70,6 +70,7 @@ import static org.bitcoinj.core.Utils.HEX;
 import static org.bitcoinj.testing.FakeTxBuilder.*;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.replay;
+import static org.hamcrest.Matchers.closeTo;
 import static org.junit.Assert.*;
 
 public class WalletTest extends TestWithWallet {
@@ -2665,7 +2666,7 @@ public class WalletTest extends TestWithWallet {
 
     @Test
     public void lowerThanDefaultFee() throws InsufficientMoneyException {
-        int feeFactor = 50;
+        int feeFactor = 200;
         Coin fee = Transaction.DEFAULT_TX_FEE.divide(feeFactor);
         receiveATransactionAmount(wallet, myAddress, Coin.COIN);
         SendRequest req = SendRequest.to(myAddress, Coin.CENT);
@@ -2679,7 +2680,8 @@ public class WalletTest extends TestWithWallet {
         emptyReq.emptyWallet = true;
         emptyReq.allowUnconfirmed();
         wallet.completeTx(emptyReq);
-        assertEquals(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE, emptyReq.tx.getFee());
+        final Coin feePerKb = emptyReq.tx.getFee().multiply(1000).divide(emptyReq.tx.getVsize());
+        assertThat((double) feePerKb.toSat(), closeTo(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.toSat(),20));
         wallet.commitTx(emptyReq.tx);
     }
 
