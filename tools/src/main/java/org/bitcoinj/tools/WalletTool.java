@@ -25,12 +25,7 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
-import joptsimple.util.DateConverter;
 import org.bitcoinj.core.*;
-import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.crypto.*;
 import org.bitcoinj.params.MainNetParams;
@@ -47,50 +42,6 @@ import org.bitcoinj.uri.BitcoinURI;
 import org.bitcoinj.uri.BitcoinURIParseException;
 import org.bitcoinj.utils.BriefLogFormatter;
 import org.bitcoinj.wallet.*;
-import org.bitcoinj.wallet.DeterministicKeyChain;
-import org.bitcoinj.wallet.DeterministicSeed;
-
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.BaseEncoding;
-import com.google.common.io.Resources;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.ByteString;
-
-import org.bitcoinj.core.AbstractBlockChain;
-import org.bitcoinj.core.Address;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Base58;
-import org.bitcoinj.core.Block;
-import org.bitcoinj.core.BlockChain;
-import org.bitcoinj.core.CheckpointManager;
-import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.Context;
-import org.bitcoinj.core.DumpedPrivateKey;
-import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.FilteredBlock;
-import org.bitcoinj.core.FullPrunedBlockChain;
-import org.bitcoinj.core.InsufficientMoneyException;
-import org.bitcoinj.core.LegacyAddress;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.Peer;
-import org.bitcoinj.core.PeerAddress;
-import org.bitcoinj.core.PeerGroup;
-import org.bitcoinj.core.SegwitAddress;
-import org.bitcoinj.core.StoredBlock;
-import org.bitcoinj.core.Transaction;
-import org.bitcoinj.core.Utils;
-import org.bitcoinj.core.VerificationException;
-import org.bitcoinj.core.listeners.BlocksDownloadedEventListener;
-import org.bitcoinj.core.listeners.DownloadProgressTracker;
-import org.bitcoinj.wallet.MarriedKeyChain;
-import org.bitcoinj.wallet.Protos;
-import org.bitcoinj.wallet.SendRequest;
-import org.bitcoinj.wallet.Wallet;
-import org.bitcoinj.wallet.WalletExtension;
-import org.bitcoinj.wallet.WalletProtobufSerializer;
 import org.bitcoinj.wallet.Wallet.BalanceType;
 import org.bitcoinj.wallet.listeners.WalletChangeEventListener;
 import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener;
@@ -99,7 +50,6 @@ import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.bouncycastle.crypto.params.KeyParameter;
 import picocli.CommandLine;
 
 import javax.annotation.Nullable;
@@ -129,6 +79,15 @@ import static org.bitcoinj.core.Coin.parseCoin;
  */
 @CommandLine.Command(name = "wallet-tool", usageHelpAutoWidth = true, sortOptions = false, description = "Print and manipulate wallets.")
 public class WalletTool implements Callable<Integer> {
+    private static final Logger log = LoggerFactory.getLogger(WalletTool.class);
+    private static final BaseEncoding HEX = BaseEncoding.base16().lowerCase();
+    private static NetworkParameters params;
+    private static BlockStore store;
+    private static AbstractBlockChain chain;
+    private static PeerGroup peerGroup;
+    private static Wallet wallet;
+    private static org.bitcoin.protocols.payments.Protos.PaymentRequest paymentRequest;
+    private static Condition condition;
     @CommandLine.Parameters(index = "0", description = "Action to perform. Valid values:%n" +
             "  dump                 Loads and prints the given wallet in textual form to stdout. Private keys and seed are only printed if --dump-privkeys is specified. If the wallet is encrypted, also specify the --password option to dump the private keys and seed.%n" +
             "                       If --dump-lookahead is present, also show pregenerated but not yet issued keys.%n" +
@@ -217,7 +176,7 @@ public class WalletTool implements Callable<Integer> {
     private String pubKeyStr;
     @CommandLine.Option(names = "--privkey", description = "Specifies a WIF-, hex- or base58-encoded private key.")
     private String privKeyStr;
-    @CommandLine.Option(names = "--addr", description ="Specifies a Bitcoin address, either SegWit or legacy.")
+    @CommandLine.Option(names = "--addr", description = "Specifies a Bitcoin address, either SegWit or legacy.")
     private String addrStr;
     @CommandLine.Option(names = "--peers", description = "Comma separated IP addresses/domain names for connections instead of peer discovery.")
     private String peersStr;
@@ -252,113 +211,50 @@ public class WalletTool implements Callable<Integer> {
     @CommandLine.Option(names = "--help", usageHelp = true, description = "Displays program options.")
     private boolean help;
 
-    private static final Logger log = LoggerFactory.getLogger(WalletTool.class);
-    private static final BaseEncoding HEX = BaseEncoding.base16().lowerCase();
-
-    private static NetworkParameters params;
-    private static BlockStore store;
-    private static AbstractBlockChain chain;
-    private static PeerGroup peerGroup;
-    private static Wallet wallet;
-    private static org.bitcoin.protocols.payments.Protos.PaymentRequest paymentRequest;
-
-    public static class Condition {
-        public enum Type {
-            // Less than, greater than, less than or equal, greater than or equal.
-            EQUAL, LT, GT, LTE, GTE
-        }
-
-        Type type;
-        String value;
-
-        public Condition(String from) {
-            if (from.length() < 2) throw new RuntimeException("Condition string too short: " + from);
-
-            if (from.startsWith("<=")) type = Type.LTE;
-            else if (from.startsWith(">=")) type = Type.GTE;
-            else if (from.startsWith("<")) type = Type.LT;
-            else if (from.startsWith("=")) type = Type.EQUAL;
-            else if (from.startsWith(">")) type = Type.GT;
-            else throw new RuntimeException("Unknown operator in condition: " + from);
-
-            String s;
-            switch (type) {
-                case LT:
-                case GT:
-                case EQUAL:
-                    s = from.substring(1);
-                    break;
-                case LTE:
-                case GTE:
-                    s = from.substring(2);
-                    break;
-                default:
-                    throw new RuntimeException("Unreachable");
-            }
-            value = s;
-        }
-
-        public boolean matchBitcoins(Coin comparison) {
-            try {
-                Coin units = parseCoin(value);
-                switch (type) {
-                    case LT:
-                        return comparison.compareTo(units) < 0;
-                    case GT:
-                        return comparison.compareTo(units) > 0;
-                    case EQUAL:
-                        return comparison.compareTo(units) == 0;
-                    case LTE:
-                        return comparison.compareTo(units) <= 0;
-                    case GTE:
-                        return comparison.compareTo(units) >= 0;
-                    default:
-                        throw new RuntimeException("Unreachable");
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Could not parse value from condition string: " + value);
-                System.exit(1);
-                return false;
-            }
-        }
-    }
-
-    private static Condition condition;
-
-    public enum ActionEnum {
-        DUMP,
-        RAW_DUMP,
-        CREATE,
-        ADD_KEY,
-        ADD_ADDR,
-        DELETE_KEY,
-        CURRENT_RECEIVE_ADDR,
-        SYNC,
-        RESET,
-        SEND,
-        ENCRYPT,
-        DECRYPT,
-        MARRY,
-        UPGRADE,
-        ROTATE,
-        SET_CREATION_TIME,
-    }
-
-    public enum WaitForEnum {
-        EVER,
-        WALLET_TX,
-        BLOCK,
-        BALANCE
-    }
-
-    public enum ValidationMode {
-        FULL,
-        SPV
-    }
-
     public static void main(String[] args) throws Exception {
         int exitCode = new CommandLine(new WalletTool()).execute(args);
         System.exit(exitCode);
+    }
+
+    private static Protos.Wallet attemptHexConversion(Protos.Wallet proto) {
+        // Try to convert any raw hashes and such to textual equivalents for easier debugging. This makes it a bit
+        // less "raw" but we will just abort on any errors.
+        try {
+            Protos.Wallet.Builder builder = proto.toBuilder();
+            for (Protos.Transaction.Builder tx : builder.getTransactionBuilderList()) {
+                tx.setHash(bytesToHex(tx.getHash()));
+                for (int i = 0; i < tx.getBlockHashCount(); i++)
+                    tx.setBlockHash(i, bytesToHex(tx.getBlockHash(i)));
+                for (Protos.TransactionInput.Builder input : tx.getTransactionInputBuilderList())
+                    input.setTransactionOutPointHash(bytesToHex(input.getTransactionOutPointHash()));
+                for (Protos.TransactionOutput.Builder output : tx.getTransactionOutputBuilderList()) {
+                    if (output.hasSpentByTransactionHash())
+                        output.setSpentByTransactionHash(bytesToHex(output.getSpentByTransactionHash()));
+                }
+                // TODO: keys, ip addresses etc.
+            }
+            return builder.build();
+        } catch (Throwable throwable) {
+            log.error("Failed to do hex conversion on wallet proto", throwable);
+            return proto;
+        }
+    }
+
+    private static ByteString bytesToHex(ByteString bytes) {
+        return ByteString.copyFrom(Utils.HEX.encode(bytes.toByteArray()).getBytes());
+    }
+
+    /**
+     * Parses the string either as a whole number of blocks, or if it contains slashes as a YYYY/MM/DD format date
+     * and returns the lock time in wire format.
+     */
+    private static long parseLockTimeStr(String lockTimeStr) throws ParseException {
+        if (lockTimeStr.contains("/")) {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
+            Date date = format.parse(lockTimeStr);
+            return date.getTime() / 1000;
+        }
+        return Long.parseLong(lockTimeStr);
     }
 
     @Override
@@ -537,34 +433,6 @@ public class WalletTool implements Callable<Integer> {
         shutdown();
 
         return 0;
-    }
-
-    private static Protos.Wallet attemptHexConversion(Protos.Wallet proto) {
-        // Try to convert any raw hashes and such to textual equivalents for easier debugging. This makes it a bit
-        // less "raw" but we will just abort on any errors.
-        try {
-            Protos.Wallet.Builder builder = proto.toBuilder();
-            for (Protos.Transaction.Builder tx : builder.getTransactionBuilderList()) {
-                tx.setHash(bytesToHex(tx.getHash()));
-                for (int i = 0; i < tx.getBlockHashCount(); i++)
-                    tx.setBlockHash(i, bytesToHex(tx.getBlockHash(i)));
-                for (Protos.TransactionInput.Builder input : tx.getTransactionInputBuilderList())
-                    input.setTransactionOutPointHash(bytesToHex(input.getTransactionOutPointHash()));
-                for (Protos.TransactionOutput.Builder output : tx.getTransactionOutputBuilderList()) {
-                    if (output.hasSpentByTransactionHash())
-                        output.setSpentByTransactionHash(bytesToHex(output.getSpentByTransactionHash()));
-                }
-                // TODO: keys, ip addresses etc.
-            }
-            return builder.build();
-        } catch (Throwable throwable) {
-            log.error("Failed to do hex conversion on wallet proto", throwable);
-            return proto;
-        }
-    }
-
-    private static ByteString bytesToHex(ByteString bytes) {
-        return ByteString.copyFrom(Utils.HEX.encode(bytes.toByteArray()).getBytes());
     }
 
     private void marry() {
@@ -746,51 +614,6 @@ public class WalletTool implements Callable<Integer> {
         } catch (InsufficientMoneyException e) {
             System.err.println("Insufficient funds: have " + wallet.getBalance().toFriendlyString());
         }
-    }
-
-    static class OutputSpec {
-        public final Coin value;
-        public final Address addr;
-        public final ECKey key;
-
-        public OutputSpec(String spec) throws IllegalArgumentException {
-            String[] parts = spec.split(":");
-            if (parts.length != 2) {
-                throw new IllegalArgumentException("Malformed output specification, must have two parts separated by :");
-            }
-            String destination = parts[0];
-            if ("ALL".equalsIgnoreCase(parts[1]))
-                value = wallet.getBalance(BalanceType.ESTIMATED);
-            else
-                value = parseCoin(parts[1]);
-            if (destination.startsWith("0")) {
-                // Treat as a raw public key.
-                byte[] pubKey = new BigInteger(destination, 16).toByteArray();
-                key = ECKey.fromPublicOnly(pubKey);
-                addr = null;
-            } else {
-                // Treat as an address.
-                addr = AddressFactory.create().getAddress(params, destination);
-                key = null;
-            }
-        }
-
-        public boolean isAddress() {
-            return addr != null;
-        }
-    }
-
-    /**
-     * Parses the string either as a whole number of blocks, or if it contains slashes as a YYYY/MM/DD format date
-     * and returns the lock time in wire format.
-     */
-    private static long parseLockTimeStr(String lockTimeStr) throws ParseException {
-        if (lockTimeStr.contains("/")) {
-            SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
-            Date date = format.parse(lockTimeStr);
-            return date.getTime() / 1000;
-        }
-        return Long.parseLong(lockTimeStr);
     }
 
     private void sendPaymentRequest(String location, boolean verifyPki) {
@@ -1264,6 +1087,129 @@ public class WalletTool implements Callable<Integer> {
         if (condition.matchBitcoins(balance)) {
             System.out.println(balance.toFriendlyString());
             latch.countDown();
+        }
+    }
+
+    public enum ActionEnum {
+        DUMP,
+        RAW_DUMP,
+        CREATE,
+        ADD_KEY,
+        ADD_ADDR,
+        DELETE_KEY,
+        CURRENT_RECEIVE_ADDR,
+        SYNC,
+        RESET,
+        SEND,
+        ENCRYPT,
+        DECRYPT,
+        MARRY,
+        UPGRADE,
+        ROTATE,
+        SET_CREATION_TIME,
+    }
+
+    public enum WaitForEnum {
+        EVER,
+        WALLET_TX,
+        BLOCK,
+        BALANCE
+    }
+
+    public enum ValidationMode {
+        FULL,
+        SPV
+    }
+
+    public static class Condition {
+        Type type;
+        String value;
+        public Condition(String from) {
+            if (from.length() < 2) throw new RuntimeException("Condition string too short: " + from);
+
+            if (from.startsWith("<=")) type = Type.LTE;
+            else if (from.startsWith(">=")) type = Type.GTE;
+            else if (from.startsWith("<")) type = Type.LT;
+            else if (from.startsWith("=")) type = Type.EQUAL;
+            else if (from.startsWith(">")) type = Type.GT;
+            else throw new RuntimeException("Unknown operator in condition: " + from);
+
+            String s;
+            switch (type) {
+                case LT:
+                case GT:
+                case EQUAL:
+                    s = from.substring(1);
+                    break;
+                case LTE:
+                case GTE:
+                    s = from.substring(2);
+                    break;
+                default:
+                    throw new RuntimeException("Unreachable");
+            }
+            value = s;
+        }
+
+        public boolean matchBitcoins(Coin comparison) {
+            try {
+                Coin units = parseCoin(value);
+                switch (type) {
+                    case LT:
+                        return comparison.compareTo(units) < 0;
+                    case GT:
+                        return comparison.compareTo(units) > 0;
+                    case EQUAL:
+                        return comparison.compareTo(units) == 0;
+                    case LTE:
+                        return comparison.compareTo(units) <= 0;
+                    case GTE:
+                        return comparison.compareTo(units) >= 0;
+                    default:
+                        throw new RuntimeException("Unreachable");
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Could not parse value from condition string: " + value);
+                System.exit(1);
+                return false;
+            }
+        }
+
+        public enum Type {
+            // Less than, greater than, less than or equal, greater than or equal.
+            EQUAL, LT, GT, LTE, GTE
+        }
+    }
+
+    static class OutputSpec {
+        public final Coin value;
+        public final Address addr;
+        public final ECKey key;
+
+        public OutputSpec(String spec) throws IllegalArgumentException {
+            String[] parts = spec.split(":");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("Malformed output specification, must have two parts separated by :");
+            }
+            String destination = parts[0];
+            if ("ALL".equalsIgnoreCase(parts[1]))
+                value = wallet.getBalance(BalanceType.ESTIMATED);
+            else
+                value = parseCoin(parts[1]);
+            if (destination.startsWith("0")) {
+                // Treat as a raw public key.
+                byte[] pubKey = new BigInteger(destination, 16).toByteArray();
+                key = ECKey.fromPublicOnly(pubKey);
+                addr = null;
+            } else {
+                // Treat as an address.
+                addr = AddressFactory.create().getAddress(params, destination);
+                key = null;
+            }
+        }
+
+        public boolean isAddress() {
+            return addr != null;
         }
     }
 

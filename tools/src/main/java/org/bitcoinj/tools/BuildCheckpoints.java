@@ -17,12 +17,7 @@
 
 package org.bitcoinj.tools;
 
-import com.google.common.io.Resources;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
 import org.bitcoinj.core.*;
-import org.bitcoinj.core.listeners.NewBestBlockListener;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
@@ -31,7 +26,6 @@ import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.MemoryBlockStore;
 import org.bitcoinj.utils.BriefLogFormatter;
 import org.bitcoinj.utils.Threading;
-import com.google.common.io.Resources;
 import picocli.CommandLine;
 
 import java.io.*;
@@ -44,7 +38,6 @@ import java.security.MessageDigest;
 import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -57,6 +50,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 @CommandLine.Command(name = "build-checkpoints", usageHelpAutoWidth = true, sortOptions = false, description = "Create checkpoint files to use with CheckpointManager.")
 public class BuildCheckpoints implements Callable<Integer> {
+    private static NetworkParameters params;
     @CommandLine.Option(names = "--net", description = "Which network to connect to. Valid values: ${COMPLETION-CANDIDATES}. Default: ${DEFAULT-VALUE}")
     private NetworkEnum net = NetworkEnum.MAIN;
     @CommandLine.Option(names = "--peer", description = "IP address/domain name for connection instead of localhost.")
@@ -66,12 +60,80 @@ public class BuildCheckpoints implements Callable<Integer> {
     @CommandLine.Option(names = "--help", usageHelp = true, description = "Displays program options.")
     private boolean help;
 
-    private static NetworkParameters params;
-
     public static void main(String[] args) throws Exception {
         BriefLogFormatter.initWithSilentBitcoinJ();
         int exitCode = new CommandLine(new BuildCheckpoints()).execute(args);
         System.exit(exitCode);
+    }
+
+    private static void writeBinaryCheckpoints(TreeMap<Integer, StoredBlock> checkpoints, File file) throws Exception {
+        MessageDigest digest = Sha256Hash.newDigest();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(file, false);
+             DigestOutputStream digestOutputStream = new DigestOutputStream(fileOutputStream, digest);
+             DataOutputStream dataOutputStream = new DataOutputStream(digestOutputStream)) {
+            digestOutputStream.on(false);
+            dataOutputStream.writeBytes("CHECKPOINTS 1");
+            dataOutputStream.writeInt(0); // Number of signatures to read. Do this later.
+            digestOutputStream.on(true);
+            dataOutputStream.writeInt(checkpoints.size());
+            ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
+            for (StoredBlock block : checkpoints.values()) {
+                block.serializeCompact(buffer);
+                dataOutputStream.write(buffer.array());
+                buffer.position(0);
+            }
+            Sha256Hash checkpointsHash = Sha256Hash.wrap(digest.digest());
+            System.out.println("Hash of checkpoints data is " + checkpointsHash);
+            System.out.println("Checkpoints written to '" + file.getCanonicalPath() + "'.");
+        }
+    }
+
+    private static void writeTextualCheckpoints(TreeMap<Integer, StoredBlock> checkpoints, File file)
+            throws IOException {
+        try (PrintWriter writer = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.US_ASCII))) {
+            writer.println("TXT CHECKPOINTS 1");
+            writer.println("0"); // Number of signatures to read. Do this later.
+            writer.println(checkpoints.size());
+            ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
+            for (StoredBlock block : checkpoints.values()) {
+                block.serializeCompact(buffer);
+                writer.println(CheckpointManager.BASE64.encode(buffer.array()));
+                buffer.position(0);
+            }
+            System.out.println("Checkpoints written to '" + file.getCanonicalPath() + "'.");
+        }
+    }
+
+    private static void sanityCheck(File file, int expectedSize) throws IOException {
+        FileInputStream fis = new FileInputStream(file);
+        CheckpointManager manager;
+        try {
+            manager = new CheckpointManager(params, fis);
+        } finally {
+            fis.close();
+        }
+
+        checkState(manager.numCheckpoints() == expectedSize);
+
+        if (params.getId().equals(NetworkParameters.ID_MAINNET)) {
+            StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
+            checkState(test.getHeight() == 280224);
+            checkState(test.getHeader().getHashAsString()
+                    .equals("00000000000000000b5d59a15f831e1c45cb688a4db6b0a60054d49a9997fa34"));
+        } else if (params.getId().equals(NetworkParameters.ID_TESTNET)) {
+            StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
+            checkState(test.getHeight() == 167328);
+            checkState(test.getHeader().getHashAsString()
+                    .equals("0000000000035ae7d5025c2538067fe7adb1cf5d5d9c31b024137d9090ed13a9"));
+        }
+    }
+
+    private static void startPeerGroup(PeerGroup peerGroup, InetAddress ipAddress) {
+        final PeerAddress peerAddress = new PeerAddress(params, ipAddress);
+        System.out.println("Connecting to " + peerAddress + "...");
+        peerGroup.addAddress(peerAddress);
+        peerGroup.start();
     }
 
     @Override
@@ -169,75 +231,5 @@ public class BuildCheckpoints implements Callable<Integer> {
         sanityCheck(textFile, checkpoints.size());
 
         return 0;
-    }
-
-    private static void writeBinaryCheckpoints(TreeMap<Integer, StoredBlock> checkpoints, File file) throws Exception {
-        MessageDigest digest = Sha256Hash.newDigest();
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file, false);
-             DigestOutputStream digestOutputStream = new DigestOutputStream(fileOutputStream, digest);
-             DataOutputStream dataOutputStream = new DataOutputStream(digestOutputStream)) {
-            digestOutputStream.on(false);
-            dataOutputStream.writeBytes("CHECKPOINTS 1");
-            dataOutputStream.writeInt(0); // Number of signatures to read. Do this later.
-            digestOutputStream.on(true);
-            dataOutputStream.writeInt(checkpoints.size());
-            ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
-            for (StoredBlock block : checkpoints.values()) {
-                block.serializeCompact(buffer);
-                dataOutputStream.write(buffer.array());
-                buffer.position(0);
-            }
-            Sha256Hash checkpointsHash = Sha256Hash.wrap(digest.digest());
-            System.out.println("Hash of checkpoints data is " + checkpointsHash);
-            System.out.println("Checkpoints written to '" + file.getCanonicalPath() + "'.");
-        }
-    }
-
-    private static void writeTextualCheckpoints(TreeMap<Integer, StoredBlock> checkpoints, File file)
-            throws IOException {
-        try (PrintWriter writer = new PrintWriter(
-                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.US_ASCII))) {
-            writer.println("TXT CHECKPOINTS 1");
-            writer.println("0"); // Number of signatures to read. Do this later.
-            writer.println(checkpoints.size());
-            ByteBuffer buffer = ByteBuffer.allocate(StoredBlock.COMPACT_SERIALIZED_SIZE);
-            for (StoredBlock block : checkpoints.values()) {
-                block.serializeCompact(buffer);
-                writer.println(CheckpointManager.BASE64.encode(buffer.array()));
-                buffer.position(0);
-            }
-            System.out.println("Checkpoints written to '" + file.getCanonicalPath() + "'.");
-        }
-    }
-
-    private static void sanityCheck(File file, int expectedSize) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        CheckpointManager manager;
-        try {
-            manager = new CheckpointManager(params, fis);
-        } finally {
-            fis.close();
-        }
-
-        checkState(manager.numCheckpoints() == expectedSize);
-
-        if (params.getId().equals(NetworkParameters.ID_MAINNET)) {
-            StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
-            checkState(test.getHeight() == 280224);
-            checkState(test.getHeader().getHashAsString()
-                    .equals("00000000000000000b5d59a15f831e1c45cb688a4db6b0a60054d49a9997fa34"));
-        } else if (params.getId().equals(NetworkParameters.ID_TESTNET)) {
-            StoredBlock test = manager.getCheckpointBefore(1390500000); // Thu Jan 23 19:00:00 CET 2014
-            checkState(test.getHeight() == 167328);
-            checkState(test.getHeader().getHashAsString()
-                    .equals("0000000000035ae7d5025c2538067fe7adb1cf5d5d9c31b024137d9090ed13a9"));
-        }
-    }
-
-    private static void startPeerGroup(PeerGroup peerGroup, InetAddress ipAddress) {
-        final PeerAddress peerAddress = new PeerAddress(params, ipAddress);
-        System.out.println("Connecting to " + peerAddress + "...");
-        peerGroup.addAddress(peerAddress);
-        peerGroup.start();
     }
 }
