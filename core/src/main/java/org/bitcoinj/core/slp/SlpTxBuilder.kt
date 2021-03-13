@@ -2,6 +2,7 @@ package org.bitcoinj.core.slp
 
 import io.reactivex.Single
 import org.bitcoinj.core.*
+import org.bitcoinj.core.slp.opreturn.SlpOpReturnOutputSend
 import org.bitcoinj.kits.SlpAppKit
 import org.bitcoinj.kits.SlpBIP47AppKit
 import org.bitcoinj.protocols.payments.slp.SlpPaymentSession
@@ -34,9 +35,17 @@ class SlpTxBuilder {
                         req.feePerKb = Coin.valueOf(1000L)
 
                         val opReturn = if (it.quantities.size == 1) {
-                            SlpOpReturnOutputSend(it.tokenId, it.quantities[0].toLong(), 0)
+                            SlpOpReturnOutputSend(
+                                it.tokenId,
+                                it.quantities[0].toLong(),
+                                0
+                            )
                         } else {
-                            SlpOpReturnOutputSend(it.tokenId, it.quantities[0].toLong(), it.quantities[1].toLong())
+                            SlpOpReturnOutputSend(
+                                it.tokenId,
+                                it.quantities[0].toLong(),
+                                it.quantities[1].toLong()
+                            )
                         }
 
                         req.tx.addOutput(Coin.ZERO, opReturn.script)
@@ -77,9 +86,17 @@ class SlpTxBuilder {
                         req.feePerKb = Coin.valueOf(1000L)
 
                         val opReturn = if (it.quantities.size == 1) {
-                            SlpOpReturnOutputSend(it.tokenId, it.quantities[0].toLong(), 0)
+                            SlpOpReturnOutputSend(
+                                it.tokenId,
+                                it.quantities[0].toLong(),
+                                0
+                            )
                         } else {
-                            SlpOpReturnOutputSend(it.tokenId, it.quantities[0].toLong(), it.quantities[1].toLong())
+                            SlpOpReturnOutputSend(
+                                it.tokenId,
+                                it.quantities[0].toLong(),
+                                it.quantities[1].toLong()
+                            )
                         }
 
                         req.tx.addOutput(Coin.ZERO, opReturn.script)

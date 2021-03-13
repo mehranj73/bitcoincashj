@@ -20,6 +20,7 @@ package org.bitcoinj.kits;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.bip47.BIP47Account;
 import org.bitcoinj.core.slp.*;
+import org.bitcoinj.core.slp.opreturn.SlpOpReturnOutputGenesis;
 import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.HDKeyDerivation;

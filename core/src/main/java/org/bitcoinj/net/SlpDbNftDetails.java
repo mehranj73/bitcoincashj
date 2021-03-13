@@ -6,10 +6,10 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 
-public class SlpDbTokenDetails {
+public class SlpDbNftDetails {
     private String json;
 
-    public SlpDbTokenDetails(String tokenId) {
+    public SlpDbNftDetails(String tokenId) {
         JSONObject json = new JSONObject();
         json.put("v", 3);
         JSONObject q = new JSONObject();
@@ -22,7 +22,7 @@ public class SlpDbTokenDetails {
         q.put("limit", 1);
         json.put("q", q);
         JSONObject r = new JSONObject();
-        r.put("f", "[.[] | {decimals: .tokenDetails.decimals, ticker: .tokenDetails.symbol}]");
+        r.put("f", "[.[] | {decimals: .tokenDetails.decimals, ticker: .tokenDetails.symbol, nftParentId: .nftParentId}]");
         json.put("r", r);
 
         this.json = json.toString();

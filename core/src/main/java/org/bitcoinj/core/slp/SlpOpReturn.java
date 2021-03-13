@@ -13,7 +13,9 @@ import java.util.Objects;
 
 public class SlpOpReturn {
     public static final String slpProtocolId = "534c5000";
-    public static final String tokenTypeId = "01";
+    public static final String tokenType1Id = "01";
+    public static final String nft1ParentTypeId = "81";
+    public static final String nft1ChildTypeId = "41";
     public static final String genesisTxTypeId = "47454e45534953";
     public static final String mintTxTypeId = "4d494e54";
     public static final String sendTxTypeId = "53454e44";
@@ -29,7 +31,12 @@ public class SlpOpReturn {
     public enum SlpTxType {
         GENESIS,
         MINT,
-        SEND
+        SEND,
+        NFT_PARENT_GENESIS,
+        NFT_PARENT_MINT,
+        NFT_PARENT_SEND,
+        NFT_CHILD_GENESIS,
+        NFT_CHILD_SEND
     }
 
     private Script opReturn;
@@ -57,11 +64,13 @@ public class SlpOpReturn {
 
     private void setTokenId(Script opReturn) {
         if (ScriptPattern.isOpReturn(opReturn)) {
-            if (this.getSlpTxType() == SlpTxType.SEND || this.getSlpTxType() == SlpTxType.MINT) {
+            if (this.getSlpTxType() == SlpTxType.SEND || this.getSlpTxType() == SlpTxType.MINT || this.getSlpTxType() == SlpTxType.NFT_PARENT_SEND
+                    || this.getSlpTxType() == SlpTxType.NFT_CHILD_SEND || this.getSlpTxType() == SlpTxType.NFT_PARENT_MINT) {
                 ScriptChunk tokenIdChunk = opReturn.getChunks().get(tokenIdChunkLocation);
                 assert tokenIdChunk.data != null;
                 this.tokenId = new String(Hex.encode(tokenIdChunk.data));
-            } else if (this.getSlpTxType() == SlpTxType.GENESIS) {
+            } else if (this.getSlpTxType() == SlpTxType.GENESIS || this.getSlpTxType() == SlpTxType.NFT_PARENT_GENESIS
+                    || this.getSlpTxType() == SlpTxType.NFT_CHILD_GENESIS) {
                 this.tokenId = this.tx.getTxId().toString();
             }
         }
@@ -79,7 +88,28 @@ public class SlpOpReturn {
                     ScriptChunk tokenTypeChunk = opReturn.getChunks().get(slpTokenTypeChunkLocation);
                     if (tokenTypeChunk != null && tokenTypeChunk.data != null) {
                         String tokenType = new String(Hex.encode(tokenTypeChunk.data), StandardCharsets.UTF_8);
-                        return tokenType.equals(tokenTypeId);
+                        return tokenType.equals(tokenType1Id) || tokenType.equals(nft1ParentTypeId);
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isNftChildTx(Transaction tx) {
+        List<TransactionOutput> outputs = tx.getOutputs();
+        TransactionOutput opReturnUtxo = outputs.get(0);
+        Script opReturn = opReturnUtxo.getScriptPubKey();
+        if (ScriptPattern.isOpReturn(opReturn)) {
+            ScriptChunk protocolChunk = opReturn.getChunks().get(protocolChunkLocation);
+            if (protocolChunk != null && protocolChunk.data != null) {
+                String protocolId = new String(Hex.encode(protocolChunk.data), StandardCharsets.UTF_8);
+                if (protocolId.equals(slpProtocolId)) {
+                    ScriptChunk tokenTypeChunk = opReturn.getChunks().get(slpTokenTypeChunkLocation);
+                    if (tokenTypeChunk != null && tokenTypeChunk.data != null) {
+                        String tokenType = new String(Hex.encode(tokenTypeChunk.data), StandardCharsets.UTF_8);
+                        return tokenType.equals(nft1ChildTypeId);
                     }
                 }
             }
@@ -94,19 +124,51 @@ public class SlpOpReturn {
             if (protocolChunk != null && protocolChunk.data != null) {
                 String protocolId = new String(Hex.encode(protocolChunk.data), StandardCharsets.UTF_8);
                 if (protocolId.equals(slpProtocolId)) {
-                    ScriptChunk slpTxTypeChunk = opReturn.getChunks().get(slpTxTypeChunkLocation);
-                    if (slpTxTypeChunk != null && slpTxTypeChunk.data != null) {
-                        String txType = new String(Hex.encode(slpTxTypeChunk.data), StandardCharsets.UTF_8);
-                        switch (txType) {
-                            case genesisTxTypeId:
-                                this.slpTxType = SlpTxType.GENESIS;
-                                break;
-                            case mintTxTypeId:
-                                this.slpTxType = SlpTxType.MINT;
-                                break;
-                            case sendTxTypeId:
-                                this.slpTxType = SlpTxType.SEND;
-                                break;
+                    ScriptChunk tokenTypeChunk = opReturn.getChunks().get(slpTokenTypeChunkLocation);
+                    if (tokenTypeChunk != null && tokenTypeChunk.data != null) {
+                        String tokenType = new String(Hex.encode(tokenTypeChunk.data), StandardCharsets.UTF_8);
+
+                        ScriptChunk slpTxTypeChunk = opReturn.getChunks().get(slpTxTypeChunkLocation);
+                        if (slpTxTypeChunk != null && slpTxTypeChunk.data != null) {
+                            String txType = new String(Hex.encode(slpTxTypeChunk.data), StandardCharsets.UTF_8);
+                            switch (txType) {
+                                case genesisTxTypeId:
+                                    switch (tokenType) {
+                                        case tokenType1Id:
+                                            this.slpTxType = SlpTxType.GENESIS;
+                                            break;
+                                        case nft1ParentTypeId:
+                                            this.slpTxType = SlpTxType.NFT_PARENT_GENESIS;
+                                            break;
+                                        case nft1ChildTypeId:
+                                            this.slpTxType = SlpTxType.NFT_CHILD_GENESIS;
+                                            break;
+                                    }
+                                    break;
+                                case mintTxTypeId:
+                                    switch (tokenType) {
+                                        case tokenType1Id:
+                                            this.slpTxType = SlpTxType.MINT;
+                                            break;
+                                        case nft1ParentTypeId:
+                                            this.slpTxType = SlpTxType.NFT_PARENT_MINT;
+                                            break;
+                                    }
+                                    break;
+                                case sendTxTypeId:
+                                    switch (tokenType) {
+                                        case tokenType1Id:
+                                            this.slpTxType = SlpTxType.SEND;
+                                            break;
+                                        case nft1ParentTypeId:
+                                            this.slpTxType = SlpTxType.NFT_PARENT_SEND;
+                                            break;
+                                        case nft1ChildTypeId:
+                                            this.slpTxType = SlpTxType.NFT_CHILD_SEND;
+                                            break;
+                                    }
+                                    break;
+                            }
                         }
                     }
                 }
@@ -118,12 +180,17 @@ public class SlpOpReturn {
         int chunkOffset = 0;
         switch (this.slpTxType) {
             case GENESIS:
+            case NFT_PARENT_GENESIS:
+            case NFT_CHILD_GENESIS:
                 chunkOffset = 10;
                 break;
             case MINT:
+            case NFT_PARENT_MINT:
                 chunkOffset = 6;
                 break;
             case SEND:
+            case NFT_PARENT_SEND:
+            case NFT_CHILD_SEND:
                 chunkOffset = 5;
                 break;
         }
@@ -154,12 +221,17 @@ public class SlpOpReturn {
         int chunkOffset = 0;
         switch (this.slpTxType) {
             case GENESIS:
+            case NFT_PARENT_GENESIS:
+            case NFT_CHILD_GENESIS:
                 chunkOffset = 10;
                 break;
             case MINT:
+            case NFT_PARENT_MINT:
                 chunkOffset = 6;
                 break;
             case SEND:
+            case NFT_PARENT_SEND:
+            case NFT_CHILD_SEND:
                 chunkOffset = 5;
                 break;
         }

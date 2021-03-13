@@ -35,12 +35,17 @@ public class SlpTransaction {
         int chunkOffset = 0;
         switch (this.slpOpReturn.getSlpTxType()) {
             case GENESIS:
+            case NFT_PARENT_GENESIS:
+            case NFT_CHILD_GENESIS:
                 chunkOffset = 10;
                 break;
             case MINT:
+            case NFT_PARENT_MINT:
                 chunkOffset = 6;
                 break;
             case SEND:
+            case NFT_PARENT_SEND:
+            case NFT_CHILD_SEND:
                 chunkOffset = 5;
                 break;
         }

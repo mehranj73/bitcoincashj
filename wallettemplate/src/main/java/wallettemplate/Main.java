@@ -27,13 +27,11 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.PeerAddress;
 import org.bitcoinj.core.Utils;
-import org.bitcoinj.kits.WalletAppKit;
+import org.bitcoinj.core.slp.SlpTokenBalance;
+import org.bitcoinj.kits.SlpAppKit;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
-import org.bitcoinj.params.ScaleNetParams;
-import org.bitcoinj.params.TestNet4Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.utils.AppDataDirectory;
 import org.bitcoinj.utils.BriefLogFormatter;
@@ -46,9 +44,7 @@ import wallettemplate.utils.TextFieldValidator;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URL;
-import java.net.UnknownHostException;
 
 import static wallettemplate.utils.GuiUtils.*;
 
@@ -59,7 +55,7 @@ public class Main extends Application {
     private static final String WALLET_FILE_NAME = APP_NAME.replaceAll("[^a-zA-Z0-9.-]", "_") + "-"
             + params.getPaymentProtocolId();
 
-    public static WalletAppKit bitcoin;
+    public static SlpAppKit bitcoin;
     public static Main instance;
 
     private StackPane uiStack;
@@ -116,6 +112,7 @@ public class Main extends Application {
         // a future version.
         Threading.USER_THREAD = Platform::runLater;
         // Create the app kit. It won't do any heavyweight initialization until after we start it.
+
         setupWalletKit(null);
 
         if (bitcoin.isChainFileLocked()) {
@@ -142,7 +139,7 @@ public class Main extends Application {
     public void setupWalletKit(@Nullable DeterministicSeed seed) {
         // If seed is non-null it means we are restoring from backup.
         File appDataDirectory = AppDataDirectory.get(APP_NAME).toFile();
-        bitcoin = new WalletAppKit(params, PREFERRED_OUTPUT_SCRIPT_TYPE, null, appDataDirectory, WALLET_FILE_NAME) {
+        bitcoin = new SlpAppKit(params, PREFERRED_OUTPUT_SCRIPT_TYPE, null, appDataDirectory, WALLET_FILE_NAME) {
             @Override
             protected void onSetupCompleted() {
                 wallet().setAcceptRiskyTransactions(true);
@@ -159,6 +156,34 @@ public class Main extends Application {
                 .setUserAgent(APP_NAME, "1.0");
         if (seed != null)
             bitcoin.restoreWalletFromSeed(seed);
+
+        new Thread() {
+            @Override
+            public void run() {
+                while(true) {
+                    if(bitcoin.isRunning()) {
+                        //System.out.println(bitcoin.wallet().getRecentTransactions(0, false));
+                        bitcoin.recalculateSlpUtxos();
+                        bitcoin.recalculateNftUtxos();
+
+                        System.out.println("SLPs::");
+                        for(SlpTokenBalance slpTokenBalance : bitcoin.getSlpBalances()) {
+                            System.out.println(bitcoin.getSlpToken(slpTokenBalance.getTokenId()).toString() + ", " + slpTokenBalance.getBalance());
+                        }
+
+                        System.out.println("NFTs::");
+                        for(SlpTokenBalance nftSlpTokenBalance : bitcoin.getNftBalances()) {
+                            System.out.println(bitcoin.getNft(nftSlpTokenBalance.getTokenId()).toString() + ", " + nftSlpTokenBalance.getBalance());
+                        }
+                        try {
+                            Thread.sleep(5000L);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }.start();
     }
 
     private Node stopClickPane = new Pane();

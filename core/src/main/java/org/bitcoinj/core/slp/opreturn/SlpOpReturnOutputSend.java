@@ -1,4 +1,4 @@
-package org.bitcoinj.core.slp;
+package org.bitcoinj.core.slp.opreturn;
 
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
