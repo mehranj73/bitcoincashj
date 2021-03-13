@@ -5,6 +5,11 @@ import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.*;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
+import org.bitcoinj.core.slp.SlpAddress;
+import org.bitcoinj.core.slp.SlpToken;
+import org.bitcoinj.core.slp.SlpTokenBalance;
+import org.bitcoinj.core.slp.SlpUTXO;
+import org.bitcoinj.core.slp.nft.NonFungibleSlpToken;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.net.BlockingClientManager;
 import org.bitcoinj.net.discovery.DnsDiscovery;
@@ -22,6 +27,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.FileLock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -61,6 +67,15 @@ public class WalletKitCore extends AbstractIdleService {
     public boolean useTor = false;
     public String torProxyIp = "127.0.0.1";
     public String torProxyPort = "9050";
+
+    /** SLP common stuff **/
+    protected ArrayList<SlpUTXO> slpUtxos = new ArrayList<>();
+    protected ArrayList<SlpToken> slpTokens = new ArrayList<>();
+    protected ArrayList<SlpTokenBalance> slpBalances = new ArrayList<>();
+    protected ArrayList<String> verifiedSlpTxs = new ArrayList<>();
+    protected ArrayList<SlpUTXO> nftUtxos = new ArrayList<>();
+    protected ArrayList<NonFungibleSlpToken> nfts = new ArrayList<>();
+    protected ArrayList<SlpTokenBalance> nftBalances = new ArrayList<>();
 
     /**
      * Sets a wallet factory which will be used when the kit creates a new wallet.
@@ -104,6 +119,68 @@ public class WalletKitCore extends AbstractIdleService {
      */
     protected List<WalletExtension> provideWalletExtensions() throws Exception {
         return ImmutableList.of();
+    }
+
+    public ArrayList<SlpTokenBalance> getSlpBalances() {
+        return this.slpBalances;
+    }
+
+    public ArrayList<SlpTokenBalance> getNftBalances() {
+        return this.nftBalances;
+    }
+
+    public ArrayList<SlpToken> getSlpTokens() {
+        return this.slpTokens;
+    }
+
+    public ArrayList<SlpUTXO> getSlpUtxos() {
+        return this.slpUtxos;
+    }
+
+    public ArrayList<SlpUTXO> getNftUtxos() {
+        return this.nftUtxos;
+    }
+
+    public SlpAddress currentSlpReceiveAddress() {
+        return this.wallet().currentReceiveAddress().toSlp();
+    }
+
+    public SlpAddress currentSlpChangeAddress() {
+        return this.wallet().currentChangeAddress().toSlp();
+    }
+
+    public SlpAddress freshSlpReceiveAddress() {
+        return this.wallet().freshReceiveAddress().toSlp();
+    }
+
+    public SlpAddress freshSlpChangeAddress() {
+        return this.wallet().freshChangeAddress().toSlp();
+    }
+
+    public SlpToken getSlpToken(String tokenId) {
+        for (SlpToken slpToken : this.slpTokens) {
+            String slpTokenTokenId = slpToken.getTokenId();
+            if (slpTokenTokenId != null) {
+                if (slpTokenTokenId.equals(tokenId)) {
+                    return slpToken;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public NonFungibleSlpToken getNft(String tokenId) {
+        for (NonFungibleSlpToken slpToken : this.nfts) {
+            String slpTokenTokenId = slpToken.getTokenId();
+            if (slpTokenTokenId != null) {
+                if (slpTokenTokenId.equals(tokenId)) {
+                    return slpToken;
+                }
+            }
+        }
+
+        return null;
     }
 
     public NetworkParameters params() {

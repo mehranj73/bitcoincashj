@@ -73,13 +73,6 @@ public class SlpBIP47AppKit extends BIP47AppKit {
     private File tokensFile;
     private File nftsFile;
     private long MIN_DUST = 546L;
-    private ArrayList<SlpUTXO> slpUtxos = new ArrayList<>();
-    private ArrayList<SlpToken> slpTokens = new ArrayList<>();
-    private ArrayList<SlpTokenBalance> slpBalances = new ArrayList<>();
-    private ArrayList<String> verifiedSlpTxs = new ArrayList<>();
-    private ArrayList<SlpUTXO> nftUtxos = new ArrayList<>();
-    private ArrayList<NonFungibleSlpToken> nfts = new ArrayList<>();
-    private ArrayList<SlpTokenBalance> nftBalances = new ArrayList<>();
     private SlpDbProcessor slpDbProcessor;
     private boolean recalculatingTokens = false;
     private boolean recalculatingNfts = false;
@@ -304,44 +297,6 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                 e.printStackTrace();
             }
         }
-    }
-
-    public ArrayList<SlpTokenBalance> getSlpBalances() {
-        return this.slpBalances;
-    }
-
-    public ArrayList<SlpTokenBalance> getNftBalances() {
-        return this.nftBalances;
-    }
-
-    public ArrayList<SlpToken> getSlpTokens() {
-        return this.slpTokens;
-    }
-
-    public ArrayList<SlpUTXO> getSlpUtxos() {
-        return this.slpUtxos;
-    }
-
-    public ArrayList<SlpUTXO> getNftUtxos() {
-        return this.nftUtxos;
-    }
-
-    SlpAddressFactory slpAddressFactory = SlpAddressFactory.create();
-
-    public SlpAddress currentSlpReceiveAddress() {
-        return slpAddressFactory.fromP2PKHHash(this.wallet().getParams(), this.wallet().currentReceiveAddress().getHash160());
-    }
-
-    public SlpAddress currentSlpChangeAddress() {
-        return slpAddressFactory.fromP2PKHHash(this.wallet().getParams(), this.wallet().currentChangeAddress().getHash160());
-    }
-
-    public SlpAddress freshSlpReceiveAddress() {
-        return slpAddressFactory.fromP2PKHHash(this.wallet().getParams(), this.wallet().freshReceiveAddress().getHash160());
-    }
-
-    public SlpAddress freshSlpChangeAddress() {
-        return slpAddressFactory.fromP2PKHHash(this.wallet().getParams(), this.wallet().freshChangeAddress().getHash160());
     }
 
     public Transaction createSlpTransaction(String slpDestinationAddress, String tokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
@@ -599,32 +554,6 @@ public class SlpBIP47AppKit extends BIP47AppKit {
         }
 
         return false;
-    }
-
-    public SlpToken getSlpToken(String tokenId) {
-        for (SlpToken slpToken : this.slpTokens) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return slpToken;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public NonFungibleSlpToken getNft(String tokenId) {
-        for (NonFungibleSlpToken slpToken : this.nfts) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return slpToken;
-                }
-            }
-        }
-
-        return null;
     }
 
     public boolean hasTransactionBeenRecorded(String txid) {
