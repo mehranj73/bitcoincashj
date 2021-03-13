@@ -235,6 +235,10 @@ public class SlpAppKit extends WalletKitCore {
         return this.slpUtxos;
     }
 
+    public ArrayList<SlpUTXO> getNftUtxos() {
+        return this.nftUtxos;
+    }
+
     public SlpAddress currentSlpReceiveAddress() {
         return this.wallet().currentReceiveAddress().toSlp();
     }
@@ -276,6 +280,14 @@ public class SlpAppKit extends WalletKitCore {
         req.tx.addOutput(Coin.ZERO, slpOpReturn.getScript());
         req.tx.addOutput(this.wallet().getParams().getMinNonDustOutput(), this.wallet().currentChangeAddress());
         return wallet().sendCoinsOffline(req);
+    }
+
+    public Transaction createNftSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+        return this.createNftSendTx(slpDestinationAddress, nftTokenId, numTokens, aesKey, true);
+    }
+
+    public Transaction createNftSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
+        return SlpTxBuilder.buildNftSendTx(nftTokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
     }
 
     public void recalculateSlpUtxos() {

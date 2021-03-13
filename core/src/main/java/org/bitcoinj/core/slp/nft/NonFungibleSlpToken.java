@@ -1,32 +1,17 @@
 package org.bitcoinj.core.slp.nft;
 
-public class NonFungibleSlpToken {
-    private String tokenId;
+import org.bitcoinj.core.slp.SlpToken;
+
+public class NonFungibleSlpToken extends SlpToken {
     private String nftParentId;
-    private String ticker;
-    private int decimals;
 
     public NonFungibleSlpToken(String tokenId, String nftParentId, String ticker, int decimals) {
-        this.tokenId = tokenId;
+        super(tokenId, ticker, decimals);
         this.nftParentId = nftParentId;
-        this.ticker = ticker;
-        this.decimals = decimals;
-    }
-
-    public String getTokenId() {
-        return this.tokenId;
     }
 
     public String getNftParentId() {
         return this.nftParentId;
-    }
-
-    public String getTicker() {
-        return this.ticker;
-    }
-
-    public int getDecimals() {
-        return this.decimals;
     }
 
     @Override
