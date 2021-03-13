@@ -69,6 +69,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class SlpAppKit extends WalletKitCore {
     private File tokensFile;
+    private File nftsFile;
     private long MIN_DUST = 546L;
     private ArrayList<SlpUTXO> slpUtxos = new ArrayList<>();
     private ArrayList<SlpToken> slpTokens = new ArrayList<>();
@@ -121,6 +122,11 @@ public class SlpAppKit extends WalletKitCore {
         if (tokenDataFile.exists()) {
             this.loadTokens();
         }
+        File nftDataFile = new File(this.directory(), this.filePrefix + ".nfts");
+        this.nftsFile = nftDataFile;
+        if (nftDataFile.exists()) {
+            this.loadNfts();
+        }
 
         this.slpDbProcessor = new SlpDbProcessor();
     }
@@ -133,6 +139,24 @@ public class SlpAppKit extends WalletKitCore {
                 tokenObj.put("tokenId", slpToken.getTokenId());
                 tokenObj.put("ticker", slpToken.getTicker());
                 tokenObj.put("decimals", slpToken.getDecimals());
+                json.put(tokenObj);
+            }
+            writer.write(json.toString());
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveNfts(ArrayList<NonFungibleSlpToken> nfts) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(this.directory(), nftsFile.getName())), StandardCharsets.UTF_8))) {
+            JSONArray json = new JSONArray();
+            for (NonFungibleSlpToken nft : nfts) {
+                JSONObject tokenObj = new JSONObject();
+                tokenObj.put("tokenId", nft.getTokenId());
+                tokenObj.put("nftParentId", nft.getNftParentId());
+                tokenObj.put("ticker", nft.getTicker());
+                tokenObj.put("decimals", nft.getDecimals());
                 json.put(tokenObj);
             }
             writer.write(json.toString());
@@ -171,6 +195,49 @@ public class SlpAppKit extends WalletKitCore {
                 }
             } catch (Exception e) {
                 this.slpTokens = new ArrayList<>();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                assert br != null;
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void loadNfts() {
+        BufferedReader br = null;
+        try {
+            FileInputStream is = new FileInputStream(new File(this.directory(), this.nftsFile.getName()));
+            br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = br.readLine();
+            }
+            String jsonString = sb.toString();
+
+            try {
+                JSONArray tokensJson = new JSONArray(jsonString);
+                for (int x = 0; x < tokensJson.length(); x++) {
+                    JSONObject tokenObj = tokensJson.getJSONObject(x);
+                    String tokenId = tokenObj.getString("tokenId");
+                    String nftParentId = tokenObj.getString("nftParentId");
+                    String ticker = tokenObj.getString("ticker");
+                    int decimals = tokenObj.getInt("decimals");
+                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
+                    if (!this.nftIsMapped(tokenId)) {
+                        this.nfts.add(nft);
+                    }
+                }
+            } catch (Exception e) {
+                this.nfts = new ArrayList<>();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -408,8 +475,8 @@ public class SlpAppKit extends WalletKitCore {
     private void calculateNftBalance(SlpUTXO slpUTXO, NonFungibleSlpToken nft) {
         String tokenId = nft.getTokenId();
         double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-nft.getDecimals()).doubleValue();
-        if (this.isBalanceRecorded(tokenId)) {
-            Objects.requireNonNull(this.getTokenBalance(tokenId)).addToBalance(tokenAmount);
+        if (this.isNftBalanceRecorded(tokenId)) {
+            Objects.requireNonNull(this.getNftTokenBalance(tokenId)).addToBalance(tokenAmount);
         } else {
             this.nftBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
         }
@@ -441,7 +508,7 @@ public class SlpAppKit extends WalletKitCore {
                 String nftParentId = tokenData.getString("nftParentId");
                 NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
                 this.nfts.add(nft);
-                this.saveTokens(this.slpTokens);
+                this.saveNfts(this.nfts);
             }
         }
     }
@@ -458,6 +525,26 @@ public class SlpAppKit extends WalletKitCore {
 
     private SlpTokenBalance getTokenBalance(String tokenId) {
         for (SlpTokenBalance tokenBalance : this.slpBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return tokenBalance;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isNftBalanceRecorded(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private SlpTokenBalance getNftTokenBalance(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftBalances) {
             if (tokenBalance.getTokenId().equals(tokenId)) {
                 return tokenBalance;
             }
