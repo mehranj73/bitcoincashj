@@ -120,6 +120,11 @@ public class SlpBIP47AppKit extends BIP47AppKit {
         if (tokenDataFile.exists()) {
             this.loadTokens();
         }
+        File nftDataFile = new File(this.directory(), this.filePrefix + ".nfts");
+        this.nftsFile = nftDataFile;
+        if (nftDataFile.exists()) {
+            this.loadNfts();
+        }
 
         this.slpDbProcessor = new SlpDbProcessor();
     }
