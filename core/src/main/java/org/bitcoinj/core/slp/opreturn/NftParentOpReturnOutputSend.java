@@ -11,14 +11,13 @@ import java.nio.ByteBuffer;
 public class NftParentOpReturnOutputSend {
     private Script script;
     private byte[] lokad = new byte[]{83, 76, 80, 0};
-    private byte[] type = new byte[]{81};
     private int PUSHDATA_BYTES = 8;
 
     public NftParentOpReturnOutputSend(String tokenId, long tokenAmount, long changeAmount) {
         ScriptBuilder scriptBuilder = new ScriptBuilder()
                 .op(ScriptOpCodes.OP_RETURN)
                 .data(lokad)
-                .addChunk(new ScriptChunk(type.length, type))
+                .data(Hex.decode("81"))
                 .data("SEND".getBytes())
                 .data(Hex.decode(tokenId))
                 .data(ByteBuffer.allocate(PUSHDATA_BYTES).putLong(tokenAmount).array());

@@ -11,7 +11,6 @@ import java.nio.ByteBuffer;
 public class NftParentOpReturnOutputGenesis {
     private Script script;
     private byte[] lokad = new byte[]{83, 76, 80, 0};
-    private byte[] type = new byte[]{81};
     private int PUSHDATA_BYTES = 8;
 
     public NftParentOpReturnOutputGenesis(String ticker, String name, String url, int decimals, long tokenAmount) {
@@ -32,7 +31,7 @@ public class NftParentOpReturnOutputGenesis {
         ScriptBuilder scriptBuilder = new ScriptBuilder()
                 .op(ScriptOpCodes.OP_RETURN)
                 .data(lokad)
-                .addChunk(new ScriptChunk(type.length, type))
+                .data(Hex.decode("81"))
                 .data("GENESIS".getBytes());
 
         if (ticker.equals("")) {
