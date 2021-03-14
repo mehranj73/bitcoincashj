@@ -168,6 +168,7 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                 JSONObject tokenObj = new JSONObject();
                 tokenObj.put("tokenId", nft.getTokenId());
                 tokenObj.put("nftParentId", nft.getNftParentId());
+                tokenObj.put("name", nft.getName());
                 tokenObj.put("ticker", nft.getTicker());
                 tokenObj.put("decimals", nft.getDecimals());
                 json.put(tokenObj);
