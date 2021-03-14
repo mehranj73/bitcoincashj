@@ -3,10 +3,9 @@ package org.bitcoinj.core.slp
 import io.reactivex.Single
 import org.bitcoinj.core.*
 import org.bitcoinj.core.slp.nft.NonFungibleSlpToken
+import org.bitcoinj.core.slp.opreturn.NftOpReturnOutputGenesis
 import org.bitcoinj.core.slp.opreturn.NftOpReturnOutputSend
 import org.bitcoinj.core.slp.opreturn.SlpOpReturnOutputSend
-import org.bitcoinj.kits.SlpAppKit
-import org.bitcoinj.kits.SlpBIP47AppKit
 import org.bitcoinj.kits.WalletKitCore
 import org.bitcoinj.protocols.payments.slp.SlpPaymentSession
 import org.bitcoinj.script.Script
@@ -73,7 +72,7 @@ class SlpTxBuilder {
         }
 
         @JvmStatic
-        fun buildNftSendTx(nftTokenId: String, amount: Double, toAddress: String, walletKit: WalletKitCore, aesKey: KeyParameter?, allowUnconfirmed: Boolean): Single<Transaction> {
+        fun buildNftChildSendTx(nftTokenId: String, amount: Double, toAddress: String, walletKit: WalletKitCore, aesKey: KeyParameter?, allowUnconfirmed: Boolean): Single<Transaction> {
             return sendNftUtxoSelection(nftTokenId, amount, walletKit)
                 .map {
                     val addrTo = SlpAddressFactory.create().getFromFormattedAddress(walletKit.wallet().params, toAddress).toCash()
@@ -121,6 +120,31 @@ class SlpTxBuilder {
                     val tx = req.tx
                     tx
                 }
+        }
+
+        @JvmStatic
+        fun buildNftChildGenesisTx(nftParentId: String, ticker: String, name: String, url: String, walletKit: WalletKitCore, aesKey: KeyParameter?, allowUnconfirmed: Boolean): SendRequest {
+            val filteredUtxos = walletKit.nftParentUtxos.filter { it.tokenId == nftParentId && it.tokenAmountRaw == 1L }
+            val selectedNftParentUtxo = filteredUtxos.first()
+            val doesValidParentUtxoCandidateExist = filteredUtxos.any()
+            if(doesValidParentUtxoCandidateExist) {
+                // Add OP RETURN and receiver output
+                val req = SendRequest.createSlpTransaction(walletKit.params())
+                if (allowUnconfirmed) {
+                    req.allowUnconfirmed()
+                }
+                req.aesKey = aesKey
+                req.shuffleOutputs = false
+                req.feePerKb = Coin.valueOf(1000L)
+                req.ensureMinRequiredFee = true
+                val slpOpReturn = NftOpReturnOutputGenesis(ticker, name, url, 0, 1)
+                req.tx.addInput(selectedNftParentUtxo.txUtxo)
+                req.tx.addOutput(Coin.ZERO, slpOpReturn.script)
+                req.tx.addOutput(walletKit.params().minNonDustOutput, walletKit.wallet().currentChangeAddress())
+                return req
+            } else {
+                throw IllegalArgumentException("Please setup proper NFT1-Parent UTXOs for NFT1-Child generation.")
+            }
         }
 
         @JvmStatic

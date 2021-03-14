@@ -5,30 +5,36 @@ import com.google.common.io.Closeables;
 import com.google.common.util.concurrent.*;
 import org.bitcoinj.core.*;
 import org.bitcoinj.core.listeners.DownloadProgressTracker;
-import org.bitcoinj.core.slp.SlpAddress;
-import org.bitcoinj.core.slp.SlpToken;
-import org.bitcoinj.core.slp.SlpTokenBalance;
-import org.bitcoinj.core.slp.SlpUTXO;
+import org.bitcoinj.core.slp.*;
 import org.bitcoinj.core.slp.nft.NonFungibleSlpToken;
+import org.bitcoinj.core.slp.opreturn.NftOpReturnOutputGenesis;
+import org.bitcoinj.core.slp.opreturn.SlpOpReturnOutputGenesis;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.net.BlockingClientManager;
+import org.bitcoinj.net.SlpDbNftDetails;
+import org.bitcoinj.net.SlpDbTokenDetails;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.net.discovery.PeerDiscovery;
+import org.bitcoinj.protocols.payments.slp.SlpPaymentSession;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.store.BlockStore;
 import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.*;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -76,6 +82,8 @@ public class WalletKitCore extends AbstractIdleService {
     protected ArrayList<SlpUTXO> nftUtxos = new ArrayList<>();
     protected ArrayList<NonFungibleSlpToken> nfts = new ArrayList<>();
     protected ArrayList<SlpTokenBalance> nftBalances = new ArrayList<>();
+    protected ArrayList<SlpUTXO> nftParentUtxos = new ArrayList<>();
+    protected ArrayList<SlpTokenBalance> nftParentBalances = new ArrayList<>();
 
     /**
      * Sets a wallet factory which will be used when the kit creates a new wallet.
@@ -127,6 +135,14 @@ public class WalletKitCore extends AbstractIdleService {
 
     public ArrayList<SlpTokenBalance> getNftBalances() {
         return this.nftBalances;
+    }
+
+    public ArrayList<SlpUTXO> getNftParentUtxos() {
+        return this.nftParentUtxos;
+    }
+
+    public ArrayList<SlpTokenBalance> getNftParentBalances() {
+        return this.nftParentBalances;
     }
 
     public ArrayList<SlpToken> getSlpTokens() {
@@ -569,5 +585,169 @@ public class WalletKitCore extends AbstractIdleService {
                 }
             }
         });
+    }
+
+    public void calculateSlpBalance(SlpUTXO slpUTXO, SlpToken slpToken) {
+        String tokenId = slpToken.getTokenId();
+        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-slpToken.getDecimals()).doubleValue();
+        if (this.isBalanceRecorded(tokenId)) {
+            Objects.requireNonNull(this.getTokenBalance(tokenId)).addToBalance(tokenAmount);
+        } else {
+            this.slpBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+        }
+    }
+
+    public void calculateNftBalance(SlpUTXO slpUTXO, NonFungibleSlpToken nft) {
+        String tokenId = nft.getTokenId();
+        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-nft.getDecimals()).doubleValue();
+        if (this.isNftBalanceRecorded(tokenId)) {
+            Objects.requireNonNull(this.getNftTokenBalance(tokenId)).addToBalance(tokenAmount);
+        } else {
+            this.nftBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+        }
+    }
+
+    public void calculateNftParentBalance(SlpUTXO slpUTXO, SlpToken nftParentToken) {
+        String tokenId = nftParentToken.getTokenId();
+        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-nftParentToken.getDecimals()).doubleValue();
+        if (this.isNftParentBalanceRecorded(tokenId)) {
+            Objects.requireNonNull(this.getNftParentBalance(tokenId)).addToBalance(tokenAmount);
+        } else {
+            this.nftParentBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+        }
+    }
+
+    public boolean isBalanceRecorded(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.slpBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public SlpTokenBalance getTokenBalance(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.slpBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return tokenBalance;
+            }
+        }
+
+        return null;
+    }
+
+    public boolean isNftBalanceRecorded(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public SlpTokenBalance getNftTokenBalance(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return tokenBalance;
+            }
+        }
+
+        return null;
+    }
+
+    public boolean isNftParentBalanceRecorded(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftParentBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public SlpTokenBalance getNftParentBalance(String tokenId) {
+        for (SlpTokenBalance tokenBalance : this.nftParentBalances) {
+            if (tokenBalance.getTokenId().equals(tokenId)) {
+                return tokenBalance;
+            }
+        }
+
+        return null;
+    }
+
+    public boolean tokenIsMapped(String tokenId) {
+        for (SlpToken slpToken : this.slpTokens) {
+            String slpTokenTokenId = slpToken.getTokenId();
+            if (slpTokenTokenId != null) {
+                if (slpTokenTokenId.equals(tokenId)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public boolean nftIsMapped(String tokenId) {
+        for (NonFungibleSlpToken slpToken : this.nfts) {
+            String slpTokenTokenId = slpToken.getTokenId();
+            if (slpTokenTokenId != null) {
+                if (slpTokenTokenId.equals(tokenId)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public boolean hasTransactionBeenRecorded(String txid) {
+        return this.verifiedSlpTxs.contains(txid);
+    }
+
+    public Transaction createSlpTransaction(String slpDestinationAddress, String tokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+        return this.createSlpTransaction(slpDestinationAddress, tokenId, numTokens, aesKey, true);
+    }
+
+    public Transaction createSlpTransaction(String slpDestinationAddress, String tokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
+        return SlpTxBuilder.buildTx(tokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
+    }
+
+    public Transaction createSlpTransactionBip70(String tokenId, @Nullable KeyParameter aesKey, List<Long> rawTokens, List<String> addresses, SlpPaymentSession paymentSession) throws InsufficientMoneyException {
+        return this.createSlpTransactionBip70(tokenId, aesKey, rawTokens, addresses, paymentSession, true);
+    }
+
+    public Transaction createSlpTransactionBip70(String tokenId, @Nullable KeyParameter aesKey, List<Long> rawTokens, List<String> addresses, SlpPaymentSession paymentSession, boolean allowUnconfirmed) throws InsufficientMoneyException {
+        return SlpTxBuilder.buildTxBip70(tokenId, this, aesKey, rawTokens, addresses, paymentSession, allowUnconfirmed).blockingGet();
+    }
+
+    public Transaction createSlpGenesisTransaction(String ticker, String name, String url, int decimals, long tokenQuantity, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+        SendRequest req = SendRequest.createSlpTransaction(this.params());
+        req.aesKey = aesKey;
+        req.shuffleOutputs = false;
+        req.feePerKb = Coin.valueOf(1000L);
+        SlpOpReturnOutputGenesis slpOpReturn = new SlpOpReturnOutputGenesis(ticker, name, url, decimals, tokenQuantity);
+        req.tx.addOutput(Coin.ZERO, slpOpReturn.getScript());
+        req.tx.addOutput(this.wallet().getParams().getMinNonDustOutput(), this.wallet().currentChangeAddress());
+        return wallet().sendCoinsOffline(req);
+    }
+
+    public Transaction createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+        return createNftChildGenesisTransaction(nftParentId, ticker, name, url, aesKey, true);
+    }
+
+    public Transaction createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
+        SendRequest req = SlpTxBuilder.buildNftChildGenesisTx(nftParentId, ticker, name, url, this, aesKey, allowUnconfirmed);
+        return wallet().sendCoinsOffline(req);
+    }
+
+    public Transaction createNftChildSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+        return this.createNftChildSendTx(slpDestinationAddress, nftTokenId, numTokens, aesKey, true);
+    }
+
+    public Transaction createNftChildSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
+        return SlpTxBuilder.buildNftChildSendTx(nftTokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
     }
 }

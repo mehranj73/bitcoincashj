@@ -299,48 +299,16 @@ public class SlpBIP47AppKit extends BIP47AppKit {
         }
     }
 
-    public Transaction createSlpTransaction(String slpDestinationAddress, String tokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
-        return this.createSlpTransaction(slpDestinationAddress, tokenId, numTokens, aesKey, true);
-    }
-
-    public Transaction createSlpTransaction(String slpDestinationAddress, String tokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
-        return SlpTxBuilder.buildTx(tokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
-    }
-
-    public Transaction createSlpTransactionBip70(String tokenId, @Nullable KeyParameter aesKey, List<Long> rawTokens, List<String> addresses, SlpPaymentSession paymentSession) throws InsufficientMoneyException {
-        return this.createSlpTransactionBip70(tokenId, aesKey, rawTokens, addresses, paymentSession, true);
-    }
-
-    public Transaction createSlpTransactionBip70(String tokenId, @Nullable KeyParameter aesKey, List<Long> rawTokens, List<String> addresses, SlpPaymentSession paymentSession, boolean allowUnconfirmed) throws InsufficientMoneyException {
-        return SlpTxBuilder.buildTxBip70(tokenId, this, aesKey, rawTokens, addresses, paymentSession, allowUnconfirmed).blockingGet();
-    }
-
-    public Transaction createSlpGenesisTransaction(String ticker, String name, String url, int decimals, long tokenQuantity, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
-        SendRequest req = SendRequest.createSlpTransaction(this.params());
-        req.aesKey = aesKey;
-        req.shuffleOutputs = false;
-        req.feePerKb = Coin.valueOf(1000L);
-        SlpOpReturnOutputGenesis slpOpReturn = new SlpOpReturnOutputGenesis(ticker, name, url, decimals, tokenQuantity);
-        req.tx.addOutput(Coin.ZERO, slpOpReturn.getScript());
-        req.tx.addOutput(this.wallet().getParams().getMinNonDustOutput(), this.wallet().currentChangeAddress());
-        return wallet().sendCoinsOffline(req);
-    }
-
-    public Transaction createNftSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
-        return this.createNftSendTx(slpDestinationAddress, nftTokenId, numTokens, aesKey, true);
-    }
-
-    public Transaction createNftSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
-        return SlpTxBuilder.buildNftSendTx(nftTokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
-    }
-
     public void recalculateSlpUtxos() {
         if (!recalculatingTokens) {
             recalculatingTokens = true;
             this.slpUtxos.clear();
             this.slpBalances.clear();
+            this.nftParentUtxos.clear();
+            this.nftParentBalances.clear();
             List<TransactionOutput> utxos = this.wallet().getAllDustUtxos(false, false);
             ArrayList<SlpUTXO> slpUtxosToAdd = new ArrayList<>();
+            ArrayList<SlpUTXO> nftParentUtxosToAdd = new ArrayList<>();
 
             for (TransactionOutput utxo : utxos) {
                 Transaction tx = utxo.getParentTransaction();
@@ -372,6 +340,31 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                                 } else {
                                     SlpToken slpToken = this.getSlpToken(tokenId);
                                     this.calculateSlpBalance(slpUTXO, slpToken);
+                                }
+                            }
+                        } else if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_MINT) {
+                            if (!hasTransactionBeenRecorded(tx.getTxId().toString())) {
+                                SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
+                                boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
+                                if (valid) {
+                                    SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
+                                    nftParentUtxosToAdd.add(slpUTXO);
+                                    if (!this.tokenIsMapped(tokenId)) {
+                                        this.tryCacheToken(tokenId);
+                                    } else {
+                                        SlpToken slpToken = this.getSlpToken(tokenId);
+                                        this.calculateNftParentBalance(slpUTXO, slpToken);
+                                    }
+                                    this.verifiedSlpTxs.add(tx.getTxId().toString());
+                                }
+                            } else {
+                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
+                                nftParentUtxosToAdd.add(slpUTXO);
+                                if (!this.tokenIsMapped(tokenId)) {
+                                    this.tryCacheToken(tokenId);
+                                } else {
+                                    SlpToken slpToken = this.getSlpToken(tokenId);
+                                    this.calculateNftParentBalance(slpUTXO, slpToken);
                                 }
                             }
                         }
@@ -434,29 +427,9 @@ public class SlpBIP47AppKit extends BIP47AppKit {
         }
     }
 
-    private void calculateSlpBalance(SlpUTXO slpUTXO, SlpToken slpToken) {
-        String tokenId = slpToken.getTokenId();
-        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-slpToken.getDecimals()).doubleValue();
-        if (this.isBalanceRecorded(tokenId)) {
-            Objects.requireNonNull(this.getTokenBalance(tokenId)).addToBalance(tokenAmount);
-        } else {
-            this.slpBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
-        }
-    }
-
     private SlpUTXO processSlpUtxo(SlpOpReturn slpOpReturn, TransactionOutput utxo) {
         long tokenRawAmount = slpOpReturn.getRawAmountOfUtxo(utxo.getIndex() - 1);
         return new SlpUTXO(slpOpReturn.getTokenId(), tokenRawAmount, utxo, SlpUTXO.SlpUtxoType.NORMAL);
-    }
-
-    private void calculateNftBalance(SlpUTXO slpUTXO, NonFungibleSlpToken nft) {
-        String tokenId = nft.getTokenId();
-        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-nft.getDecimals()).doubleValue();
-        if (this.isNftBalanceRecorded(tokenId)) {
-            Objects.requireNonNull(this.getNftTokenBalance(tokenId)).addToBalance(tokenAmount);
-        } else {
-            this.nftBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
-        }
     }
 
     private void tryCacheToken(String tokenId) {
@@ -488,72 +461,6 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                 this.saveNfts(this.nfts);
             }
         }
-    }
-
-    private boolean isBalanceRecorded(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.slpBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private SlpTokenBalance getTokenBalance(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.slpBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return tokenBalance;
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isNftBalanceRecorded(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.nftBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private SlpTokenBalance getNftTokenBalance(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.nftBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return tokenBalance;
-            }
-        }
-
-        return null;
-    }
-
-    private boolean tokenIsMapped(String tokenId) {
-        for (SlpToken slpToken : this.slpTokens) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private boolean nftIsMapped(String tokenId) {
-        for (NonFungibleSlpToken slpToken : this.nfts) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     public boolean hasTransactionBeenRecorded(String txid) {
