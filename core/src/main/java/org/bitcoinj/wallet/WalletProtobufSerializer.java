@@ -766,7 +766,6 @@ public class WalletProtobufSerializer {
             }
 
             if(transactionOutput.hasFrozen()) {
-                System.out.println("Has frozen..., frozen: " + transactionOutput.getFrozen());
                 output.setFrozen(transactionOutput.getFrozen());
             }
         }
