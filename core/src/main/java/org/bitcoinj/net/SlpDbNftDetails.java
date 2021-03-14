@@ -22,7 +22,7 @@ public class SlpDbNftDetails {
         q.put("limit", 1);
         json.put("q", q);
         JSONObject r = new JSONObject();
-        r.put("f", "[.[] | {decimals: .tokenDetails.decimals, ticker: .tokenDetails.symbol, nftParentId: .nftParentId}]");
+        r.put("f", "[.[] | {decimals: .tokenDetails.decimals, ticker: .tokenDetails.symbol, name: .tokenDetails.name, nftParentId: .nftParentId}]");
         json.put("r", r);
 
         this.json = json.toString();

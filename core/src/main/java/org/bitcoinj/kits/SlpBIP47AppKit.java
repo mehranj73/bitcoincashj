@@ -243,8 +243,9 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                     String tokenId = tokenObj.getString("tokenId");
                     String nftParentId = tokenObj.getString("nftParentId");
                     String ticker = tokenObj.getString("ticker");
+                    String name = tokenObj.getString("name");
                     int decimals = tokenObj.getInt("decimals");
-                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
+                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
                     if (!this.nftIsMapped(tokenId)) {
                         this.nfts.add(nft);
                     }
@@ -456,8 +457,9 @@ public class SlpBIP47AppKit extends BIP47AppKit {
             if (tokenData != null) {
                 int decimals = tokenData.getInt("decimals");
                 String ticker = tokenData.getString("ticker");
+                String name = tokenData.getString("name");
                 String nftParentId = tokenData.getString("nftParentId");
-                NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
+                NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
                 this.nfts.add(nft);
                 this.saveNfts(this.nfts);
             }

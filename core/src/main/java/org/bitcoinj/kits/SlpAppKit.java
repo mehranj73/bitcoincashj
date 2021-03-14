@@ -149,6 +149,7 @@ public class SlpAppKit extends WalletKitCore {
                 JSONObject tokenObj = new JSONObject();
                 tokenObj.put("tokenId", nft.getTokenId());
                 tokenObj.put("nftParentId", nft.getNftParentId());
+                tokenObj.put("name", nft.getName());
                 tokenObj.put("ticker", nft.getTicker());
                 tokenObj.put("decimals", nft.getDecimals());
                 json.put(tokenObj);
@@ -224,8 +225,9 @@ public class SlpAppKit extends WalletKitCore {
                     String tokenId = tokenObj.getString("tokenId");
                     String nftParentId = tokenObj.getString("nftParentId");
                     String ticker = tokenObj.getString("ticker");
+                    String name = tokenObj.getString("name");
                     int decimals = tokenObj.getInt("decimals");
-                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
+                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
                     if (!this.nftIsMapped(tokenId)) {
                         this.nfts.add(nft);
                     }
@@ -438,7 +440,8 @@ public class SlpAppKit extends WalletKitCore {
                 int decimals = tokenData.getInt("decimals");
                 String ticker = tokenData.getString("ticker");
                 String nftParentId = tokenData.getString("nftParentId");
-                NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, ticker, decimals);
+                String name = tokenData.getString("name");
+                NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
                 this.nfts.add(nft);
                 this.saveNfts(this.nfts);
             }
