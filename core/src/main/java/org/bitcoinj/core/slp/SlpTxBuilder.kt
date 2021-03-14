@@ -125,9 +125,9 @@ class SlpTxBuilder {
         @JvmStatic
         fun buildNftChildGenesisTx(nftParentId: String, ticker: String, name: String, url: String, walletKit: WalletKitCore, aesKey: KeyParameter?, allowUnconfirmed: Boolean): SendRequest {
             val filteredUtxos = walletKit.nftParentUtxos.filter { it.tokenId == nftParentId && it.tokenAmountRaw == 1L }
-            val selectedNftParentUtxo = filteredUtxos.first()
             val doesValidParentUtxoCandidateExist = filteredUtxos.any()
             if(doesValidParentUtxoCandidateExist) {
+                val selectedNftParentUtxo = filteredUtxos.first()
                 // Add OP RETURN and receiver output
                 val req = SendRequest.createSlpTransaction(walletKit.params())
                 if (allowUnconfirmed) {
