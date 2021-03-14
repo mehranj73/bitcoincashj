@@ -723,24 +723,25 @@ public class WalletKitCore extends AbstractIdleService {
         return SlpTxBuilder.buildTxBip70(tokenId, this, aesKey, rawTokens, addresses, paymentSession, allowUnconfirmed).blockingGet();
     }
 
-    public Transaction createSlpGenesisTransaction(String ticker, String name, String url, int decimals, long tokenQuantity, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+    public SendRequest createSlpGenesisTransaction(String ticker, String name, String url, int decimals, long tokenQuantity, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
         SendRequest req = SendRequest.createSlpTransaction(this.params());
         req.aesKey = aesKey;
         req.shuffleOutputs = false;
         req.feePerKb = Coin.valueOf(1000L);
+        req.ensureMinRequiredFee = true;
         SlpOpReturnOutputGenesis slpOpReturn = new SlpOpReturnOutputGenesis(ticker, name, url, decimals, tokenQuantity);
         req.tx.addOutput(Coin.ZERO, slpOpReturn.getScript());
         req.tx.addOutput(this.wallet().getParams().getMinNonDustOutput(), this.wallet().currentChangeAddress());
-        return wallet().sendCoinsOffline(req);
+        return req;
     }
 
-    public Transaction createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
+    public SendRequest createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
         return createNftChildGenesisTransaction(nftParentId, ticker, name, url, aesKey, true);
     }
 
-    public Transaction createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
+    public SendRequest createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
         SendRequest req = SlpTxBuilder.buildNftChildGenesisTx(nftParentId, ticker, name, url, this, aesKey, allowUnconfirmed);
-        return wallet().sendCoinsOffline(req);
+        return req;
     }
 
     public Transaction createNftChildSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
