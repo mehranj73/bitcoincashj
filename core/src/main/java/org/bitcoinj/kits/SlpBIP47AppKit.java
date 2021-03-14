@@ -373,6 +373,7 @@ public class SlpBIP47AppKit extends BIP47AppKit {
             }
 
             this.slpUtxos.addAll(slpUtxosToAdd);
+            this.nftParentUtxos.addAll(nftParentUtxosToAdd);
             this.saveVerifiedTxs(this.verifiedSlpTxs);
             recalculatingTokens = false;
         }

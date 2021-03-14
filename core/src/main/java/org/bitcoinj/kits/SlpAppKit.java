@@ -354,6 +354,7 @@ public class SlpAppKit extends WalletKitCore {
             }
 
             this.slpUtxos.addAll(slpUtxosToAdd);
+            this.nftParentUtxos.addAll(nftParentUtxosToAdd);
             this.saveVerifiedTxs(this.verifiedSlpTxs);
             recalculatingTokens = false;
         }
