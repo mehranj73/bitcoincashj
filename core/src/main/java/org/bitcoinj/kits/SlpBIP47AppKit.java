@@ -367,7 +367,7 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                         SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
                         String tokenId = slpOpReturn.getTokenId();
 
-                        if (!hasTransactionBeenRecorded(tx.getTxId().toString())) {
+                        if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
                             SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                             if (!this.nftIsMapped(tokenId)) {
                                 this.tryCacheNft(tokenId);
