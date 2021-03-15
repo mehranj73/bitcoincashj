@@ -319,55 +319,26 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                         SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
                         String tokenId = slpOpReturn.getTokenId();
 
-                        if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.MINT) {
-                            if (!hasTransactionBeenRecorded(tx.getTxId().toString())) {
-                                SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
-                                boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
-                                if (valid) {
-                                    SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                                    slpUtxosToAdd.add(slpUTXO);
-                                    if (!this.tokenIsMapped(tokenId)) {
-                                        this.tryCacheToken(tokenId);
-                                    } else {
-                                        SlpToken slpToken = this.getSlpToken(tokenId);
-                                        this.calculateSlpBalance(slpUTXO, slpToken);
-                                    }
-                                    this.verifiedSlpTxs.add(tx.getTxId().toString());
-                                }
+                        if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
+                            SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
+                            if (!this.tokenIsMapped(tokenId)) {
+                                this.tryCacheToken(tokenId);
                             } else {
-                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                                slpUtxosToAdd.add(slpUTXO);
-                                if (!this.tokenIsMapped(tokenId)) {
-                                    this.tryCacheToken(tokenId);
-                                } else {
-                                    SlpToken slpToken = this.getSlpToken(tokenId);
+                                SlpToken slpToken = this.getSlpToken(tokenId);
+
+                                if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.MINT) {
                                     this.calculateSlpBalance(slpUTXO, slpToken);
+                                    slpUtxosToAdd.add(slpUTXO);
+                                } else if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_MINT) {
+                                    this.calculateNftParentBalance(slpUTXO, slpToken);
+                                    nftParentUtxosToAdd.add(slpUTXO);
                                 }
                             }
-                        } else if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_MINT) {
-                            if (!hasTransactionBeenRecorded(tx.getTxId().toString())) {
-                                SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
-                                boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
-                                if (valid) {
-                                    SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                                    nftParentUtxosToAdd.add(slpUTXO);
-                                    if (!this.tokenIsMapped(tokenId)) {
-                                        this.tryCacheToken(tokenId);
-                                    } else {
-                                        SlpToken slpToken = this.getSlpToken(tokenId);
-                                        this.calculateNftParentBalance(slpUTXO, slpToken);
-                                    }
-                                    this.verifiedSlpTxs.add(tx.getTxId().toString());
-                                }
-                            } else {
-                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                                nftParentUtxosToAdd.add(slpUTXO);
-                                if (!this.tokenIsMapped(tokenId)) {
-                                    this.tryCacheToken(tokenId);
-                                } else {
-                                    SlpToken slpToken = this.getSlpToken(tokenId);
-                                    this.calculateNftParentBalance(slpUTXO, slpToken);
-                                }
+                        } else {
+                            SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
+                            boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
+                            if (valid) {
+                                this.verifiedSlpTxs.add(tx.getTxId().toString());
                             }
                         }
                     }
@@ -397,27 +368,19 @@ public class SlpBIP47AppKit extends BIP47AppKit {
                         String tokenId = slpOpReturn.getTokenId();
 
                         if (!hasTransactionBeenRecorded(tx.getTxId().toString())) {
-                            SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
-                            boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
-                            if (valid) {
-                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                                slpUtxosToAdd.add(slpUTXO);
-                                if (!this.nftIsMapped(tokenId)) {
-                                    this.tryCacheNft(tokenId);
-                                } else {
-                                    NonFungibleSlpToken slpToken = this.getNft(tokenId);
-                                    this.calculateNftBalance(slpUTXO, slpToken);
-                                }
-                                this.verifiedSlpTxs.add(tx.getTxId().toString());
-                            }
-                        } else {
                             SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
-                            slpUtxosToAdd.add(slpUTXO);
                             if (!this.nftIsMapped(tokenId)) {
                                 this.tryCacheNft(tokenId);
                             } else {
                                 NonFungibleSlpToken slpToken = this.getNft(tokenId);
                                 this.calculateNftBalance(slpUTXO, slpToken);
+                                slpUtxosToAdd.add(slpUTXO);
+                            }
+                        } else {
+                            SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
+                            boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
+                            if (valid) {
+                                this.verifiedSlpTxs.add(tx.getTxId().toString());
                             }
                         }
                     }
