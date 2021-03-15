@@ -284,6 +284,8 @@ public class SlpAppKit extends WalletKitCore {
 
     public void recalculateSlpUtxos() {
         if (!recalculatingTokens) {
+            boolean addedVerifiedTx = false;
+            boolean addedToken = false;
             recalculatingTokens = true;
             this.slpUtxos.clear();
             this.slpBalances.clear();
@@ -292,6 +294,7 @@ public class SlpAppKit extends WalletKitCore {
             List<TransactionOutput> utxos = this.wallet().getAllDustUtxos(false, false);
             ArrayList<SlpUTXO> slpUtxosToAdd = new ArrayList<>();
             ArrayList<SlpUTXO> nftParentUtxosToAdd = new ArrayList<>();
+            ArrayList<SlpToken> tokensToAdd = new ArrayList<>();
 
             for (TransactionOutput utxo : utxos) {
                 Transaction tx = utxo.getParentTransaction();
@@ -301,10 +304,14 @@ public class SlpAppKit extends WalletKitCore {
                         String tokenId = slpOpReturn.getTokenId();
 
                         if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
-                            SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                             if (!this.tokenIsMapped(tokenId)) {
-                                this.tryCacheToken(tokenId);
+                                SlpToken slpToken = this.tryCacheToken(tokenId);
+                                if(slpToken != null) {
+                                    tokensToAdd.add(slpToken);
+                                    addedToken = true;
+                                }
                             } else {
+                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                                 SlpToken slpToken = this.getSlpToken(tokenId);
 
                                 if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.MINT) {
@@ -320,6 +327,7 @@ public class SlpAppKit extends WalletKitCore {
                             boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
                             if (valid) {
                                 this.verifiedSlpTxs.add(tx.getTxId().toString());
+                                addedVerifiedTx = true;
                             }
                         }
                     }
@@ -328,18 +336,29 @@ public class SlpAppKit extends WalletKitCore {
 
             this.slpUtxos.addAll(slpUtxosToAdd);
             this.nftParentUtxos.addAll(nftParentUtxosToAdd);
-            this.saveVerifiedTxs(this.verifiedSlpTxs);
+
+            if(addedVerifiedTx) {
+                this.saveVerifiedTxs(this.verifiedSlpTxs);
+            }
+
+            if(addedToken) {
+                this.slpTokens.addAll(tokensToAdd);
+                this.saveTokens(this.slpTokens);
+            }
             recalculatingTokens = false;
         }
     }
 
     public void recalculateNftUtxos() {
         if (!recalculatingNfts) {
+            boolean addedVerifiedTx = false;
+            boolean addedNft = false;
             recalculatingNfts = true;
             this.nftUtxos.clear();
             this.nftBalances.clear();
             List<TransactionOutput> utxos = this.wallet().getAllDustUtxos(false, false);
-            ArrayList<SlpUTXO> slpUtxosToAdd = new ArrayList<>();
+            ArrayList<SlpUTXO> nftUtxosToAdd = new ArrayList<>();
+            ArrayList<NonFungibleSlpToken> nftsToAdd = new ArrayList<>();
 
             for (TransactionOutput utxo : utxos) {
                 Transaction tx = utxo.getParentTransaction();
@@ -349,27 +368,40 @@ public class SlpAppKit extends WalletKitCore {
                         String tokenId = slpOpReturn.getTokenId();
 
                         if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
-                            SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                             if (!this.nftIsMapped(tokenId)) {
-                                this.tryCacheNft(tokenId);
+                                NonFungibleSlpToken nft = this.tryCacheNft(tokenId);
+                                if(nft != null) {
+                                    nftsToAdd.add(nft);
+                                    addedNft = true;
+                                }
                             } else {
+                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                                 NonFungibleSlpToken slpToken = this.getNft(tokenId);
                                 this.calculateNftBalance(slpUTXO, slpToken);
-                                slpUtxosToAdd.add(slpUTXO);
+                                nftUtxosToAdd.add(slpUTXO);
                             }
                         } else {
                             SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
                             boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
                             if (valid) {
                                 this.verifiedSlpTxs.add(tx.getTxId().toString());
+                                addedVerifiedTx = true;
                             }
                         }
                     }
                 }
             }
 
-            this.nftUtxos.addAll(slpUtxosToAdd);
-            this.saveVerifiedTxs(this.verifiedSlpTxs);
+            this.nftUtxos.addAll(nftUtxosToAdd);
+
+            if(addedVerifiedTx) {
+                this.saveVerifiedTxs(this.verifiedSlpTxs);
+            }
+
+            if(addedNft) {
+                this.nfts.addAll(nftsToAdd);
+                this.saveNfts(this.nfts);
+            }
             recalculatingNfts = false;
         }
     }
@@ -379,7 +411,7 @@ public class SlpAppKit extends WalletKitCore {
         return new SlpUTXO(slpOpReturn.getTokenId(), tokenRawAmount, utxo, SlpUTXO.SlpUtxoType.NORMAL);
     }
 
-    private void tryCacheToken(String tokenId) {
+    private SlpToken tryCacheToken(String tokenId) {
         if (!this.tokenIsMapped(tokenId)) {
             SlpDbTokenDetails tokenQuery = new SlpDbTokenDetails(tokenId);
             JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
@@ -387,14 +419,16 @@ public class SlpAppKit extends WalletKitCore {
             if (tokenData != null) {
                 int decimals = tokenData.getInt("decimals");
                 String ticker = tokenData.getString("ticker");
-                SlpToken slpToken = new SlpToken(tokenId, ticker, decimals);
-                this.slpTokens.add(slpToken);
-                this.saveTokens(this.slpTokens);
+                return new SlpToken(tokenId, ticker, decimals);
+            } else {
+                return null;
             }
+        } else {
+            return null;
         }
     }
 
-    private void tryCacheNft(String tokenId) {
+    private NonFungibleSlpToken tryCacheNft(String tokenId) {
         if (!this.nftIsMapped(tokenId)) {
             SlpDbNftDetails tokenQuery = new SlpDbNftDetails(tokenId);
             JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
@@ -404,10 +438,12 @@ public class SlpAppKit extends WalletKitCore {
                 String ticker = tokenData.getString("ticker");
                 String nftParentId = tokenData.getString("nftParentId");
                 String name = tokenData.getString("name");
-                NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
-                this.nfts.add(nft);
-                this.saveNfts(this.nfts);
+                return new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
+            } else {
+                return null;
             }
+        } else {
+            return null;
         }
     }
 }
