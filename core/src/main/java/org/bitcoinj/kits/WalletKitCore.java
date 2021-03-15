@@ -10,9 +10,7 @@ import org.bitcoinj.core.slp.nft.NonFungibleSlpToken;
 import org.bitcoinj.core.slp.opreturn.NftOpReturnOutputGenesis;
 import org.bitcoinj.core.slp.opreturn.SlpOpReturnOutputGenesis;
 import org.bitcoinj.crypto.DeterministicKey;
-import org.bitcoinj.net.BlockingClientManager;
-import org.bitcoinj.net.SlpDbNftDetails;
-import org.bitcoinj.net.SlpDbTokenDetails;
+import org.bitcoinj.net.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.net.discovery.PeerDiscovery;
 import org.bitcoinj.protocols.payments.slp.SlpPaymentSession;
@@ -22,6 +20,7 @@ import org.bitcoinj.store.BlockStoreException;
 import org.bitcoinj.store.SPVBlockStore;
 import org.bitcoinj.wallet.*;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +31,7 @@ import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.FileLock;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -75,6 +75,8 @@ public class WalletKitCore extends AbstractIdleService {
     public String torProxyPort = "9050";
 
     /** SLP common stuff **/
+    protected File tokensFile;
+    protected File nftsFile;
     protected ArrayList<SlpUTXO> slpUtxos = new ArrayList<>();
     protected ArrayList<SlpToken> slpTokens = new ArrayList<>();
     protected ArrayList<SlpTokenBalance> slpBalances = new ArrayList<>();
@@ -84,6 +86,10 @@ public class WalletKitCore extends AbstractIdleService {
     protected ArrayList<SlpTokenBalance> nftBalances = new ArrayList<>();
     protected ArrayList<SlpUTXO> nftParentUtxos = new ArrayList<>();
     protected ArrayList<SlpTokenBalance> nftParentBalances = new ArrayList<>();
+
+    protected SlpDbProcessor slpDbProcessor;
+    protected boolean recalculatingTokens = false;
+    protected boolean recalculatingNfts = false;
 
     /**
      * Sets a wallet factory which will be used when the kit creates a new wallet.
@@ -750,5 +756,327 @@ public class WalletKitCore extends AbstractIdleService {
 
     public Transaction createNftChildSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
         return SlpTxBuilder.buildNftChildSendTx(nftTokenId, numTokens, slpDestinationAddress, this, aesKey, allowUnconfirmed).blockingGet();
+    }
+
+    protected SlpUTXO processSlpUtxo(SlpOpReturn slpOpReturn, TransactionOutput utxo) {
+        long tokenRawAmount = slpOpReturn.getRawAmountOfUtxo(utxo.getIndex() - 1);
+        return new SlpUTXO(slpOpReturn.getTokenId(), tokenRawAmount, utxo, SlpUTXO.SlpUtxoType.NORMAL);
+    }
+
+    public void recalculateSlpUtxos() {
+        if (!recalculatingTokens) {
+            boolean addedVerifiedTx = false;
+            boolean addedToken = false;
+            recalculatingTokens = true;
+            this.slpUtxos.clear();
+            this.slpBalances.clear();
+            this.nftParentUtxos.clear();
+            this.nftParentBalances.clear();
+            List<TransactionOutput> utxos = this.wallet().getAllDustUtxos(true, true);
+            ArrayList<SlpUTXO> slpUtxosToAdd = new ArrayList<>();
+            ArrayList<SlpUTXO> nftParentUtxosToAdd = new ArrayList<>();
+            ArrayList<SlpToken> tokensToAdd = new ArrayList<>();
+
+            for (TransactionOutput utxo : utxos) {
+                Transaction tx = utxo.getParentTransaction();
+                if (tx != null) {
+                    if (SlpOpReturn.isSlpTx(tx)) {
+                        if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
+                            SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
+                            String tokenId = slpOpReturn.getTokenId();
+
+                            if (!this.tokenIsMapped(tokenId)) {
+                                SlpToken slpToken = this.tryCacheToken(tokenId);
+                                if(slpToken != null) {
+                                    tokensToAdd.add(slpToken);
+                                    addedToken = true;
+                                }
+                            } else {
+                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
+                                SlpToken slpToken = this.getSlpToken(tokenId);
+
+                                if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.MINT) {
+                                    this.calculateSlpBalance(slpUTXO, slpToken);
+                                    slpUtxosToAdd.add(slpUTXO);
+                                } else if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_MINT) {
+                                    this.calculateNftParentBalance(slpUTXO, slpToken);
+                                    nftParentUtxosToAdd.add(slpUTXO);
+                                }
+                            }
+                        } else {
+                            SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
+                            boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
+                            if (valid) {
+                                this.verifiedSlpTxs.add(tx.getTxId().toString());
+                                addedVerifiedTx = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            this.slpUtxos.addAll(slpUtxosToAdd);
+            this.nftParentUtxos.addAll(nftParentUtxosToAdd);
+
+            if(addedVerifiedTx) {
+                this.saveVerifiedTxs(this.verifiedSlpTxs);
+            }
+
+            if(addedToken) {
+                this.slpTokens.addAll(tokensToAdd);
+                this.saveTokens(this.slpTokens);
+            }
+            recalculatingTokens = false;
+        }
+    }
+
+    public void recalculateNftUtxos() {
+        if (!recalculatingNfts) {
+            boolean addedVerifiedTx = false;
+            boolean addedNft = false;
+            recalculatingNfts = true;
+            this.nftUtxos.clear();
+            this.nftBalances.clear();
+            List<TransactionOutput> utxos = this.wallet().getAllDustUtxos(true, true);
+            ArrayList<SlpUTXO> nftUtxosToAdd = new ArrayList<>();
+            ArrayList<NonFungibleSlpToken> nftsToAdd = new ArrayList<>();
+
+            for (TransactionOutput utxo : utxos) {
+                Transaction tx = utxo.getParentTransaction();
+                if (tx != null) {
+                    if (SlpOpReturn.isNftChildTx(tx)) {
+                        if (hasTransactionBeenRecorded(tx.getTxId().toString())) {
+                            SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
+                            String tokenId = slpOpReturn.getTokenId();
+
+                            if (!this.nftIsMapped(tokenId)) {
+                                NonFungibleSlpToken nft = this.tryCacheNft(tokenId);
+                                if(nft != null) {
+                                    nftsToAdd.add(nft);
+                                    addedNft = true;
+                                }
+                            } else {
+                                SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
+                                NonFungibleSlpToken slpToken = this.getNft(tokenId);
+                                this.calculateNftBalance(slpUTXO, slpToken);
+                                nftUtxosToAdd.add(slpUTXO);
+                            }
+                        } else {
+                            SlpDbValidTransaction validTxQuery = new SlpDbValidTransaction(tx.getTxId().toString());
+                            boolean valid = this.slpDbProcessor.isValidSlpTx(validTxQuery.getEncoded());
+                            if (valid) {
+                                this.verifiedSlpTxs.add(tx.getTxId().toString());
+                                addedVerifiedTx = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            this.nftUtxos.addAll(nftUtxosToAdd);
+
+            if(addedVerifiedTx) {
+                this.saveVerifiedTxs(this.verifiedSlpTxs);
+            }
+
+            if(addedNft) {
+                this.nfts.addAll(nftsToAdd);
+                this.saveNfts(this.nfts);
+            }
+            recalculatingNfts = false;
+        }
+    }
+
+    private SlpToken tryCacheToken(String tokenId) {
+        if (!this.tokenIsMapped(tokenId)) {
+            SlpDbTokenDetails tokenQuery = new SlpDbTokenDetails(tokenId);
+            JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
+
+            if (tokenData != null) {
+                int decimals = tokenData.getInt("decimals");
+                String ticker = tokenData.getString("ticker");
+                return new SlpToken(tokenId, ticker, decimals);
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    private NonFungibleSlpToken tryCacheNft(String tokenId) {
+        if (!this.nftIsMapped(tokenId)) {
+            SlpDbNftDetails tokenQuery = new SlpDbNftDetails(tokenId);
+            JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
+
+            if (tokenData != null) {
+                int decimals = tokenData.getInt("decimals");
+                String ticker = tokenData.getString("ticker");
+                String nftParentId = tokenData.getString("nftParentId");
+                String name = tokenData.getString("name");
+                return new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    protected void saveTokens(ArrayList<SlpToken> slpTokens) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(this.directory(), tokensFile.getName())), StandardCharsets.UTF_8))) {
+            JSONArray json = new JSONArray();
+            for (SlpToken slpToken : slpTokens) {
+                JSONObject tokenObj = new JSONObject();
+                tokenObj.put("tokenId", slpToken.getTokenId());
+                tokenObj.put("ticker", slpToken.getTicker());
+                tokenObj.put("decimals", slpToken.getDecimals());
+                json.put(tokenObj);
+            }
+            writer.write(json.toString());
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void saveNfts(ArrayList<NonFungibleSlpToken> nfts) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(this.directory(), nftsFile.getName())), StandardCharsets.UTF_8))) {
+            JSONArray json = new JSONArray();
+            for (NonFungibleSlpToken nft : nfts) {
+                JSONObject tokenObj = new JSONObject();
+                tokenObj.put("tokenId", nft.getTokenId());
+                tokenObj.put("nftParentId", nft.getNftParentId());
+                tokenObj.put("name", nft.getName());
+                tokenObj.put("ticker", nft.getTicker());
+                tokenObj.put("decimals", nft.getDecimals());
+                json.put(tokenObj);
+            }
+            writer.write(json.toString());
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void loadTokens() {
+        BufferedReader br = null;
+        try {
+            FileInputStream is = new FileInputStream(new File(this.directory(), this.tokensFile.getName()));
+            br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = br.readLine();
+            }
+            String jsonString = sb.toString();
+
+            try {
+                JSONArray tokensJson = new JSONArray(jsonString);
+                for (int x = 0; x < tokensJson.length(); x++) {
+                    JSONObject tokenObj = tokensJson.getJSONObject(x);
+                    String tokenId = tokenObj.getString("tokenId");
+                    String ticker = tokenObj.getString("ticker");
+                    int decimals = tokenObj.getInt("decimals");
+                    SlpToken slpToken = new SlpToken(tokenId, ticker, decimals);
+                    if (!this.tokenIsMapped(tokenId)) {
+                        this.slpTokens.add(slpToken);
+                    }
+                }
+            } catch (Exception e) {
+                this.slpTokens = new ArrayList<>();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                assert br != null;
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected void loadNfts() {
+        BufferedReader br = null;
+        try {
+            FileInputStream is = new FileInputStream(new File(this.directory(), this.nftsFile.getName()));
+            br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = br.readLine();
+            }
+            String jsonString = sb.toString();
+
+            try {
+                JSONArray tokensJson = new JSONArray(jsonString);
+                for (int x = 0; x < tokensJson.length(); x++) {
+                    JSONObject tokenObj = tokensJson.getJSONObject(x);
+                    String tokenId = tokenObj.getString("tokenId");
+                    String nftParentId = tokenObj.getString("nftParentId");
+                    String ticker = tokenObj.getString("ticker");
+                    String name = tokenObj.getString("name");
+                    int decimals = tokenObj.getInt("decimals");
+                    NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
+                    if (!this.nftIsMapped(tokenId)) {
+                        this.nfts.add(nft);
+                    }
+                }
+            } catch (Exception e) {
+                this.nfts = new ArrayList<>();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                assert br != null;
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected void saveVerifiedTxs(ArrayList<String> recordedSlpTxs) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(this.directory(), this.filePrefix + ".txs")), StandardCharsets.UTF_8))) {
+            StringBuilder text = new StringBuilder();
+            for (String txHash : recordedSlpTxs) {
+                text.append(txHash).append("\n");
+            }
+            writer.write(text.toString());
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void loadRecordedTxs() {
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(new File(this.directory(), this.filePrefix + ".txs")));
+            String line = br.readLine();
+            while (line != null) {
+                String txHash = line;
+                this.verifiedSlpTxs.add(txHash);
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                assert br != null;
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
