@@ -10,6 +10,7 @@ This fork of bitcoincashj has many changes and fixes since the original bitcoinc
 - 32MB block support
 - Native Cash Account integration (trustless registration and sending)
 - SLP tokens
+- SLP NFTs (Non-Fungible Tokens)
 - Standard BIP44 derivation (m/44'/145'/0' for BCH, m/44'/245'/0' for SLP)
 - UTXO management when sending coins using SendRequest.utxos
 - BIP47 Reusable Payment Codes support
