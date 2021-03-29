@@ -1,4 +1,4 @@
-package org.bitcoinj.core.slp;
+package org.bitcoinj.core.slp.opreturn;
 
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
@@ -8,17 +8,16 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.nio.ByteBuffer;
 
-public class SlpOpReturnOutputSend {
+public class NftParentOpReturnOutputSend {
     private Script script;
     private byte[] lokad = new byte[]{83, 76, 80, 0};
-    private byte[] type = new byte[]{1};
     private int PUSHDATA_BYTES = 8;
 
-    public SlpOpReturnOutputSend(String tokenId, long tokenAmount, long changeAmount) {
+    public NftParentOpReturnOutputSend(String tokenId, long tokenAmount, long changeAmount) {
         ScriptBuilder scriptBuilder = new ScriptBuilder()
                 .op(ScriptOpCodes.OP_RETURN)
                 .data(lokad)
-                .addChunk(new ScriptChunk(type.length, type))
+                .data(Hex.decode("81"))
                 .data("SEND".getBytes())
                 .data(Hex.decode(tokenId))
                 .data(ByteBuffer.allocate(PUSHDATA_BYTES).putLong(tokenAmount).array());

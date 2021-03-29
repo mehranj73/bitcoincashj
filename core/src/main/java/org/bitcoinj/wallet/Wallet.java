@@ -4548,7 +4548,6 @@ public class Wallet extends BaseTaggableObject
                         continue;
 
                     if(output.isFrozen()) {
-                        System.out.println("Frozen UTXO...");
                         continue;
                     }
 

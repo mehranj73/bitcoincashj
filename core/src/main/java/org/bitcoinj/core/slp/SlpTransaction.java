@@ -24,7 +24,7 @@ public class SlpTransaction {
         this.tx = tx;
         this.slpOpReturn = new SlpOpReturn(tx);
 
-        if (SlpOpReturn.isSlpTx(tx)) {
+        if (SlpOpReturn.isSlpTx(tx) || SlpOpReturn.isNftChildTx(tx)) {
             this.collectSlpUtxos(tx.getOutputs(), this.slpOpReturn.getOpReturn());
         } else {
             throw new NullPointerException("Not an SLP transaction.");
@@ -35,12 +35,17 @@ public class SlpTransaction {
         int chunkOffset = 0;
         switch (this.slpOpReturn.getSlpTxType()) {
             case GENESIS:
+            case NFT_PARENT_GENESIS:
+            case NFT_CHILD_GENESIS:
                 chunkOffset = 10;
                 break;
             case MINT:
+            case NFT_PARENT_MINT:
                 chunkOffset = 6;
                 break;
             case SEND:
+            case NFT_PARENT_SEND:
+            case NFT_CHILD_SEND:
                 chunkOffset = 5;
                 break;
         }
@@ -99,7 +104,7 @@ public class SlpTransaction {
                 continue;
 
             Transaction parentTransaction = connected.getParentTransaction();
-            if (parentTransaction != null && SlpOpReturn.isSlpTx(parentTransaction)) {
+            if (parentTransaction != null && (SlpOpReturn.isSlpTx(parentTransaction) || SlpOpReturn.isNftChildTx(parentTransaction))) {
                 SlpTransaction parentSlpTransaction = new SlpTransaction(parentTransaction);
                 for (SlpUTXO slpUTXO : parentSlpTransaction.getSlpUtxos()) {
                     if (slpUTXO.getTxUtxo() == connected) {
