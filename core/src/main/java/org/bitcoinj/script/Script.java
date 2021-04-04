@@ -71,7 +71,7 @@ public class Script {
     }
 
     /**
-     * Flags to pass to {@link Script#correctlySpends(Transaction, long, Coin, Script, Set)}.
+     * Flags to pass to {@link Script#correctlySpends(Transaction, long, Script, Coin, Set)}.
      * Note currently only P2SH, DERSIG and NULLDUMMY are actually supported.
      */
     public enum VerifyFlag {
