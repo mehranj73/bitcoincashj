@@ -71,7 +71,7 @@ public class Script {
     }
 
     /**
-     * Flags to pass to {@link Script#correctlySpends(Transaction, int, TransactionWitness, Coin, Script, Set)}.
+     * Flags to pass to {@link Script#correctlySpends(Transaction, long, Coin, Script, Set)}.
      * Note currently only P2SH, DERSIG and NULLDUMMY are actually supported.
      */
     public enum VerifyFlag {
@@ -1573,6 +1573,7 @@ public class Script {
         // TODO: Use int for indexes everywhere, we can't have that many inputs/outputs
         boolean sigValid = false;
         try {
+            System.out.println(Hex.toHexString(sigBytes));
             TransactionSignature sig = TransactionSignature.decodeFromBitcoin(sigBytes, requireCanonical,
                     verifyFlags.contains(VerifyFlag.LOW_S));
 
@@ -1730,13 +1731,11 @@ public class Script {
      * @param scriptSigIndex   The index in txContainingThis of the scriptSig (note: NOT the index of the scriptPubKey).
      * @param scriptPubKey     The connected scriptPubKey containing the conditions needed to claim the value.
      */
-    @Deprecated
     public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey)
             throws ScriptException {
         correctlySpends(txContainingThis, scriptSigIndex, scriptPubKey, Coin.ZERO, ALL_VERIFY_FLAGS);
     }
 
-    @Deprecated
     public void correctlySpends(Transaction txContainingThis, long scriptSigIndex, Script scriptPubKey,
                                 Set<VerifyFlag> verifyFlags)
             throws ScriptException {

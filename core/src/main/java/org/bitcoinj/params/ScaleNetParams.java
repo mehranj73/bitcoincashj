@@ -54,7 +54,6 @@ public class ScaleNetParams extends AbstractBitcoinNetParams {
         defaultPeerCount = 4;
         String genesisHash = genesisBlock.getHashAsString();
         checkState(genesisHash.equals("00000000e6453dc2dfe1ffa19023f86002eb11dbb8e87d0291a4599f0430be52"));
-        alertSigningKey = Utils.HEX.decode("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
 
         checkpoints.put(0, Sha256Hash.wrap(genesisHash));
         checkpoints.put(45, Sha256Hash.wrap("00000000d75a7c9098d02b321e9900b16ecbd552167e65683fe86e5ecf88b320"));
