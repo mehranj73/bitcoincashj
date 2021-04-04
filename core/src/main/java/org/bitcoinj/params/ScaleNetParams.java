@@ -57,6 +57,7 @@ public class ScaleNetParams extends AbstractBitcoinNetParams {
 
         checkpoints.put(0, Sha256Hash.wrap(genesisHash));
         checkpoints.put(45, Sha256Hash.wrap("00000000d75a7c9098d02b321e9900b16ecbd552167e65683fe86e5ecf88b320"));
+        checkpoints.put(10000, Sha256Hash.wrap("00000000b711dc753130e5083888d106f99b920b1b8a492eb5ac41d40e482905"));
 
         dnsSeeds = new String[]{
                 "scalenet-seed-bch.bitcoinforks.org",
@@ -64,7 +65,14 @@ public class ScaleNetParams extends AbstractBitcoinNetParams {
                 "seed.sbch.loping.net"
         };
         httpSeeds = null;
-        addrSeeds = null;
+        addrSeeds = new String[] {
+                "66.172.112.151",
+                "66.172.112.154",
+                "66.172.112.251",
+                "66.172.112.252",
+                "45.33.41.87",
+                "193.135.10.219"
+        };
         bip32HeaderP2PKHpub = 0x043587cf; // The 4 byte header that serializes in base58 to "tpub".
         bip32HeaderP2PKHpriv = 0x04358394; // The 4 byte header that serializes in base58 to "tprv"
 

@@ -56,10 +56,47 @@ public class TestNet3Params extends AbstractBitcoinNetParams {
         dnsSeeds = new String[]{
                 "testnet-seed-bch.bitcoinforks.org",
                 "testnet-seed.bchd.cash",
-                "seed.tbch.loping.net"           // Matt Corallo
+                "seed.tbch.loping.net"
         };
         httpSeeds = null;
-        addrSeeds = null;
+        addrSeeds = new String[] {
+                "3.1.200.231",
+                "18.202.213.168",
+                "18.208.207.151",
+                "34.76.213.233",
+                "34.77.146.192",
+                "35.209.103.132",
+                "35.226.242.164",
+                "47.111.162.146",
+                "47.75.218.79",
+                "51.15.125.5",
+                "52.137.48.45",
+                "52.210.18.84",
+                "52.211.211.11",
+                "54.164.174.73",
+                "71.139.127.73",
+                "84.38.3.199",
+                "91.121.88.52",
+                "95.179.183.143",
+                "95.216.174.16",
+                "103.76.36.113",
+                "119.3.168.84",
+                "121.40.76.64",
+                "139.162.76.144",
+                "157.230.114.14",
+                "159.65.163.15",
+                "165.22.88.163",
+                "172.105.233.17",
+                "193.135.10.215",
+                "194.14.247.131",
+                "195.154.177.49",
+                "203.162.80.101",
+                "206.189.203.168",
+                "212.47.254.88",
+                "[2001:41d0:1:8d34::1]",
+                "[2a01:4f8:190:4210::2]",
+                "[2a0a:51c0:0:136::4]"
+        };
         bip32HeaderP2PKHpub = 0x043587cf; // The 4 byte header that serializes in base58 to "tpub".
         bip32HeaderP2PKHpriv = 0x04358394; // The 4 byte header that serializes in base58 to "tprv"
 

@@ -13,6 +13,7 @@ import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.net.*;
 import org.bitcoinj.net.discovery.DnsDiscovery;
 import org.bitcoinj.net.discovery.PeerDiscovery;
+import org.bitcoinj.net.discovery.SeedPeers;
 import org.bitcoinj.protocols.payments.slp.SlpPaymentSession;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.store.BlockStore;
@@ -425,7 +426,12 @@ public class WalletKitCore extends AbstractIdleService {
                 vPeerGroup.setMaxConnections(peerAddresses.length);
                 peerAddresses = null;
             } else if (!params.getId().equals(NetworkParameters.ID_REGTEST)) {
-                vPeerGroup.addPeerDiscovery(discovery != null ? discovery : new DnsDiscovery(params));
+                if(discovery != null) {
+                    vPeerGroup.addPeerDiscovery(discovery);
+                } else {
+                    vPeerGroup.addPeerDiscovery(new DnsDiscovery(params));
+                    vPeerGroup.addPeerDiscovery(new SeedPeers(params));
+                }
             }
             vChain.addWallet(vWallet);
             vPeerGroup.addWallet(vWallet);

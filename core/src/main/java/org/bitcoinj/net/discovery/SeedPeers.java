@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class SeedPeers implements PeerDiscovery {
     private NetworkParameters params;
-    private int[] seedAddrs;
+    private String[] seedAddrs;
     private int pnseedIndex;
 
     /**
@@ -52,7 +52,7 @@ public class SeedPeers implements PeerDiscovery {
      * @param seedAddrs IP addresses for seed addresses.
      * @param params    Network parameters to be used for port information.
      */
-    public SeedPeers(int[] seedAddrs, NetworkParameters params) {
+    public SeedPeers(String[] seedAddrs, NetworkParameters params) {
         this.seedAddrs = seedAddrs;
         this.params = params;
     }
@@ -77,9 +77,8 @@ public class SeedPeers implements PeerDiscovery {
     private InetSocketAddress nextPeer() throws UnknownHostException, PeerDiscoveryException {
         if (seedAddrs == null || seedAddrs.length == 0)
             throw new PeerDiscoveryException("No IP address seeds configured; unable to find any peers");
-
         if (pnseedIndex >= seedAddrs.length) return null;
-        return new InetSocketAddress(convertAddress(seedAddrs[pnseedIndex++]),
+        return new InetSocketAddress(seedAddrs[pnseedIndex++],
                 params.getPort());
     }
 
@@ -99,16 +98,10 @@ public class SeedPeers implements PeerDiscovery {
 
     private List<InetSocketAddress> allPeers() throws UnknownHostException {
         List<InetSocketAddress> addresses = new ArrayList<>(seedAddrs.length);
-        for (int seedAddr : seedAddrs) {
-            addresses.add(new InetSocketAddress(convertAddress(seedAddr), params.getPort()));
+        for (String seedAddr : seedAddrs) {
+            addresses.add(new InetSocketAddress(seedAddr, params.getPort()));
         }
         return addresses;
-    }
-
-    private InetAddress convertAddress(int seed) throws UnknownHostException {
-        byte[] v4addr = new byte[4];
-        Utils.uint32ToByteArrayLE(seed, v4addr, 0);
-        return InetAddress.getByAddress(v4addr);
     }
 
     @Override

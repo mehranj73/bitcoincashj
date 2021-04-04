@@ -57,14 +57,24 @@ public class TestNet4Params extends AbstractBitcoinNetParams {
 
         checkpoints.put(0, Sha256Hash.wrap(genesisHash));
         checkpoints.put(5000, Sha256Hash.wrap("000000009f092d074574a216faec682040a853c4f079c33dfd2c3ef1fd8108c4"));
+        checkpoints.put(16845, Sha256Hash.wrap("00000000fb325b8f34fe80c96a5f708a08699a68bbab82dba4474d86bd743077"));
 
         dnsSeeds = new String[]{
                 "testnet4-seed-bch.bitcoinforks.org",
                 "testnet4-seed-bch.toom.im",
-                "seed.tbch4.loping.net"
+                "seed.tbch4.loping.net",
+                "testnet4-seed.flowee.cash"
         };
         httpSeeds = null;
-        addrSeeds = null;
+        addrSeeds = new String[] {
+                "66.172.112.151",
+                "66.172.112.154",
+                "66.172.112.251",
+                "66.172.112.252",
+                "45.33.41.87",
+                "172.104.34.214",
+                "193.135.10.219"
+        };
         bip32HeaderP2PKHpub = 0x043587cf; // The 4 byte header that serializes in base58 to "tpub".
         bip32HeaderP2PKHpriv = 0x04358394; // The 4 byte header that serializes in base58 to "tprv"
 
