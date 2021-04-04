@@ -599,23 +599,17 @@ public class WalletKitCore extends AbstractIdleService {
         });
     }
 
-    public void calculateSlpBalance(SlpUTXO slpUTXO, SlpToken slpToken) {
-        String tokenId = slpToken.getTokenId();
-        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-slpToken.getDecimals()).doubleValue();
-        if (this.isBalanceRecorded(tokenId)) {
-            Objects.requireNonNull(this.getTokenBalance(tokenId)).addToBalance(tokenAmount);
+    public void calculateTokenBalance(SlpOpReturn.SlpTokenType tokenType, SlpUTXO utxo, SlpToken token) {
+        String tokenId = token.getTokenId();
+        double tokenAmount = BigDecimal.valueOf(utxo.getTokenAmountRaw()).scaleByPowerOfTen(-token.getDecimals()).doubleValue();
+        if (this.isBalanceRecorded(tokenType, tokenId)) {
+            Objects.requireNonNull(this.getTokenBalance(tokenType, tokenId)).addToBalance(tokenAmount);
         } else {
-            this.slpBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
-        }
-    }
-
-    public void calculateNftBalance(SlpUTXO slpUTXO, NonFungibleSlpToken nft) {
-        String tokenId = nft.getTokenId();
-        double tokenAmount = BigDecimal.valueOf(slpUTXO.getTokenAmountRaw()).scaleByPowerOfTen(-nft.getDecimals()).doubleValue();
-        if (this.isNftBalanceRecorded(tokenId)) {
-            Objects.requireNonNull(this.getNftTokenBalance(tokenId)).addToBalance(tokenAmount);
-        } else {
-            this.nftBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+            if(tokenType == SlpOpReturn.SlpTokenType.SLP) {
+                this.slpBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+            } else if(tokenType == SlpOpReturn.SlpTokenType.NFT) {
+                this.nftBalances.add(new SlpTokenBalance(tokenId, tokenAmount));
+            }
         }
     }
 
@@ -629,43 +623,22 @@ public class WalletKitCore extends AbstractIdleService {
         }
     }
 
-    public boolean isBalanceRecorded(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.slpBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return true;
-            }
+    public boolean isBalanceRecorded(SlpOpReturn.SlpTokenType tokenType, String tokenId) {
+        ArrayList<SlpTokenBalance> balancesArray = new ArrayList<SlpTokenBalance>(tokenType == SlpOpReturn.SlpTokenType.SLP ? this.slpBalances : this.nftBalances);
+        for(SlpTokenBalance balance : balancesArray) {
+            String slpTokenId = balance.getTokenId();
+            return slpTokenId != null && slpTokenId.equals(tokenId);
         }
-
         return false;
     }
 
-    public SlpTokenBalance getTokenBalance(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.slpBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
+    public SlpTokenBalance getTokenBalance(SlpOpReturn.SlpTokenType tokenType, String tokenId) {
+        ArrayList<SlpTokenBalance> tokensArray = new ArrayList<SlpTokenBalance>(tokenType == SlpOpReturn.SlpTokenType.SLP ? this.slpBalances : this.nftBalances);
+        for(SlpTokenBalance tokenBalance : tokensArray) {
+            if(tokenBalance.getTokenId().equals(tokenId)) {
                 return tokenBalance;
             }
         }
-
-        return null;
-    }
-
-    public boolean isNftBalanceRecorded(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.nftBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public SlpTokenBalance getNftTokenBalance(String tokenId) {
-        for (SlpTokenBalance tokenBalance : this.nftBalances) {
-            if (tokenBalance.getTokenId().equals(tokenId)) {
-                return tokenBalance;
-            }
-        }
-
         return null;
     }
 
@@ -689,29 +662,12 @@ public class WalletKitCore extends AbstractIdleService {
         return null;
     }
 
-    public boolean tokenIsMapped(String tokenId) {
-        for (SlpToken slpToken : this.slpTokens) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return true;
-                }
-            }
+    public boolean isTokenMapped(SlpOpReturn.SlpTokenType tokenType, String tokenId) {
+        ArrayList<SlpToken> tokensArray = new ArrayList<SlpToken>(tokenType == SlpOpReturn.SlpTokenType.SLP ? this.slpTokens : this.nfts);
+        for(SlpToken token : tokensArray) {
+            String slpTokenId = token.getTokenId();
+            return slpTokenId != null && slpTokenId.equals(tokenId);
         }
-
-        return false;
-    }
-
-    public boolean nftIsMapped(String tokenId) {
-        for (NonFungibleSlpToken slpToken : this.nfts) {
-            String slpTokenTokenId = slpToken.getTokenId();
-            if (slpTokenTokenId != null) {
-                if (slpTokenTokenId.equals(tokenId)) {
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
@@ -752,8 +708,7 @@ public class WalletKitCore extends AbstractIdleService {
     }
 
     public SendRequest createNftChildGenesisTransaction(String nftParentId, String ticker, String name, String url, @Nullable KeyParameter aesKey, boolean allowUnconfirmed) throws InsufficientMoneyException {
-        SendRequest req = SlpTxBuilder.buildNftChildGenesisTx(nftParentId, ticker, name, url, this, aesKey, allowUnconfirmed);
-        return req;
+        return SlpTxBuilder.buildNftChildGenesisTx(nftParentId, ticker, name, url, this, aesKey, allowUnconfirmed);
     }
 
     public Transaction createNftChildSendTx(String slpDestinationAddress, String nftTokenId, double numTokens, @Nullable KeyParameter aesKey) throws InsufficientMoneyException {
@@ -791,7 +746,7 @@ public class WalletKitCore extends AbstractIdleService {
                             SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
                             String tokenId = slpOpReturn.getTokenId();
 
-                            if (!this.tokenIsMapped(tokenId)) {
+                            if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.SLP, tokenId)) {
                                 SlpToken slpToken = this.tryCacheToken(tokenId);
                                 if(slpToken != null) {
                                     tokensToAdd.add(slpToken);
@@ -802,7 +757,7 @@ public class WalletKitCore extends AbstractIdleService {
                                 SlpToken slpToken = this.getSlpToken(tokenId);
 
                                 if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.MINT) {
-                                    this.calculateSlpBalance(slpUTXO, slpToken);
+                                    this.calculateTokenBalance(SlpOpReturn.SlpTokenType.SLP, slpUTXO, slpToken);
                                     slpUtxosToAdd.add(slpUTXO);
                                 } else if(slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_SEND || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_GENESIS || slpOpReturn.getSlpTxType() == SlpOpReturn.SlpTxType.NFT_PARENT_MINT) {
                                     this.calculateNftParentBalance(slpUTXO, slpToken);
@@ -855,7 +810,7 @@ public class WalletKitCore extends AbstractIdleService {
                             SlpOpReturn slpOpReturn = new SlpOpReturn(tx);
                             String tokenId = slpOpReturn.getTokenId();
 
-                            if (!this.nftIsMapped(tokenId)) {
+                            if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.NFT, tokenId)) {
                                 NonFungibleSlpToken nft = this.tryCacheNft(tokenId);
                                 if(nft != null) {
                                     nftsToAdd.add(nft);
@@ -864,7 +819,7 @@ public class WalletKitCore extends AbstractIdleService {
                             } else {
                                 SlpUTXO slpUTXO = processSlpUtxo(slpOpReturn, utxo);
                                 NonFungibleSlpToken slpToken = this.getNft(tokenId);
-                                this.calculateNftBalance(slpUTXO, slpToken);
+                                this.calculateTokenBalance(SlpOpReturn.SlpTokenType.NFT, slpUTXO, slpToken);
                                 nftUtxosToAdd.add(slpUTXO);
                             }
                         } else {
@@ -894,7 +849,7 @@ public class WalletKitCore extends AbstractIdleService {
     }
 
     private SlpToken tryCacheToken(String tokenId) {
-        if (!this.tokenIsMapped(tokenId)) {
+        if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.SLP, tokenId)) {
             SlpDbTokenDetails tokenQuery = new SlpDbTokenDetails(tokenId);
             JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
 
@@ -911,7 +866,7 @@ public class WalletKitCore extends AbstractIdleService {
     }
 
     private NonFungibleSlpToken tryCacheNft(String tokenId) {
-        if (!this.nftIsMapped(tokenId)) {
+        if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.NFT, tokenId)) {
             SlpDbNftDetails tokenQuery = new SlpDbNftDetails(tokenId);
             JSONObject tokenData = this.slpDbProcessor.getTokenData(tokenQuery.getEncoded());
 
@@ -988,7 +943,7 @@ public class WalletKitCore extends AbstractIdleService {
                     String ticker = tokenObj.getString("ticker");
                     int decimals = tokenObj.getInt("decimals");
                     SlpToken slpToken = new SlpToken(tokenId, ticker, decimals);
-                    if (!this.tokenIsMapped(tokenId)) {
+                    if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.SLP, tokenId)) {
                         this.slpTokens.add(slpToken);
                     }
                 }
@@ -1032,7 +987,7 @@ public class WalletKitCore extends AbstractIdleService {
                     String name = tokenObj.getString("name");
                     int decimals = tokenObj.getInt("decimals");
                     NonFungibleSlpToken nft = new NonFungibleSlpToken(tokenId, nftParentId, name, ticker, decimals);
-                    if (!this.nftIsMapped(tokenId)) {
+                    if (!this.isTokenMapped(SlpOpReturn.SlpTokenType.NFT, tokenId)) {
                         this.nfts.add(nft);
                     }
                 }

@@ -28,6 +28,11 @@ public class SlpOpReturn {
     public static final int mintBatonVoutMintChunkLocation = 5;
     public static final int tokenOutputsStartLocation = 5;
 
+    public enum SlpTokenType {
+        SLP,
+        NFT
+    }
+
     public enum SlpTxType {
         GENESIS,
         MINT,
