@@ -1,3 +1,7 @@
+This Java library for Bitcoin Cash is a fork of bitcoinj. Please read the feature list below for all the features I've implemented since becoming the maintainer.
+
+Please consider donating: bitcoincash:qptnypuugy29lttleggl7l0vpls0vg295q9nsavw6g
+
 ### Welcome to bitcoincashj
 
 The bitcoincashj library is a Java implementation of the Bitcoin Cash (BCH) protocol. This library is a fork of Mike Hearn's original bitcoinj library aimed at supporting the Bitcoin Cash eco-system.
@@ -104,9 +108,3 @@ Now you are ready to [follow the tutorial](https://bitcoinj.github.io/getting-st
 ### Contributing to bitcoincashj
 
 If you would like to help contribute to bitcoincashj, feel free to make changes and submit pull requests.
-
-Not a programmer? Not a problem. You can donate Bitcoin Cash to the addresses below:
-
-bitcoincash:qptnypuugy29lttleggl7l0vpls0vg295q9nsavw6g
-
-PM8TJLAWsHQeTmCzXmUQDsW7ZvBY5v16xMgVHCVq68jyY6miSVhzhYXMwC2fcDz8MY8UQxyAfFzJsGuATyfXkbVAnUu2EYuxfAjLTfk1QBCq9rF7Bz1o
