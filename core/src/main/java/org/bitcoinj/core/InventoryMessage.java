@@ -64,6 +64,9 @@ public class InventoryMessage extends ListMessage {
         addItem(new InventoryItem(InventoryItem.Type.TRANSACTION, tx.getTxId()));
     }
 
+    public void addDsProof(Block block) {
+        addItem(new InventoryItem(InventoryItem.Type.DSPROOF, block.getHash()));
+    }
     /**
      * Creates a new inv message for the given transactions.
      */

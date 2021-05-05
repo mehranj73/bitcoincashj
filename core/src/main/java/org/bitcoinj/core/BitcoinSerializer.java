@@ -75,6 +75,7 @@ public class BitcoinSerializer extends MessageSerializer {
         names.put(GetUTXOsMessage.class, "getutxos");
         names.put(UTXOsMessage.class, "utxos");
         names.put(SendHeadersMessage.class, "sendheaders");
+        names.put(DSProofMessage.class, "dsproof-beta");
     }
 
     /**

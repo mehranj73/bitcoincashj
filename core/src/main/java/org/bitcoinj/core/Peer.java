@@ -127,6 +127,9 @@ public class Peer extends PeerSocketHandler {
     // to keep it pinned to the root set if they care about this data.
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final HashSet<TransactionConfidence> pendingTxDownloads = new HashSet<>();
+
+    private final HashSet<Sha256Hash> pendingDsProofDownloads = new HashSet<>();
+
     private static final int PENDING_TX_DOWNLOADS_LIMIT = 100;
     // The lowest version number we're willing to accept. Lower than this will result in an immediate disconnect.
     private volatile int vMinProtocolVersion;
@@ -1183,6 +1186,7 @@ public class Peer extends PeerSocketHandler {
         // Separate out the blocks and transactions, we'll handle them differently
         List<InventoryItem> transactions = new LinkedList<>();
         List<InventoryItem> blocks = new LinkedList<>();
+        List<InventoryItem> dsproofs = new LinkedList<>();
 
         for (InventoryItem item : items) {
             switch (item.type) {
@@ -1190,7 +1194,12 @@ public class Peer extends PeerSocketHandler {
                     transactions.add(item);
                     break;
                 case BLOCK:
+                    System.out.println("BLOCK INV RECEIVED");
                     blocks.add(item);
+                    break;
+                case DSPROOF:
+                    System.out.println("DS PROOF INV RECEIVED");
+                    dsproofs.add(item);
                     break;
                 default:
                     throw new IllegalStateException("Not implemented: " + item.type);
@@ -1214,6 +1223,13 @@ public class Peer extends PeerSocketHandler {
         }
 
         GetDataMessage getdata = new GetDataMessage(params);
+
+        Iterator<InventoryItem> dsproofIterator = dsproofs.iterator();
+        while (dsproofIterator.hasNext()) {
+            InventoryItem item = dsproofIterator.next();
+            getdata.addDsProof(item.hash);
+            pendingDsProofDownloads.add(item.hash);
+        }
 
         Iterator<InventoryItem> it = transactions.iterator();
         while (it.hasNext()) {
