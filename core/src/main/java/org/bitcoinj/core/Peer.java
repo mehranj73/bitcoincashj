@@ -519,6 +519,8 @@ public class Peer extends PeerSocketHandler {
             log.error("{} {}: Received {}", this, getPeerVersionMessage().subVer, m);
         } else if (m instanceof SendHeadersMessage) {
             // We ignore this message, because we don't announce new blocks.
+        } else if(m instanceof DSProofMessage) {
+            processDsProof((DSProofMessage) m);
         } else {
             log.warn("{}: Received unhandled message: {}", this, m);
         }
@@ -763,6 +765,15 @@ public class Peer extends PeerSocketHandler {
         log.info("{}: Sending {} items gathered from listeners to peer", getAddress(), items.size());
         for (Message item : items) {
             sendMessage(item);
+        }
+    }
+
+    protected void processDsProof(DSProofMessage dsProof) {
+        try {
+            Sha256Hash hash = Sha256Hash.ZERO_HASH;
+            pendingDsProofDownloads.remove(hash);
+        } catch(Exception e) {
+            log.error("Error processing DS proof " + dsProof);
         }
     }
 

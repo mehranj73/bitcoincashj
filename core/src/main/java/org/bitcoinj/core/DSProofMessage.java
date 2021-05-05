@@ -16,6 +16,8 @@
 
 package org.bitcoinj.core;
 
+import java.util.Arrays;
+
 /**
  * <p>
  * A new message, "sendheaders", which indicates that a node prefers to receive new block announcements via a "headers"
@@ -27,10 +29,22 @@ package org.bitcoinj.core;
  * </p>
  */
 public class DSProofMessage extends EmptyMessage {
+    private Sha256Hash id;
+    private byte[] txPrevHash;
+    private byte[] txPrevIndex;
+
     public DSProofMessage() {
     }
 
     // this is needed by the BitcoinSerializer
     public DSProofMessage(NetworkParameters params, byte[] payload) {
+        this.id = Sha256Hash.twiceOf(payload);
+        System.out.println("DSPROOF_ID:: " + this.id.toString());
+        this.txPrevHash = Arrays.copyOfRange(payload, 0, 32);
+        this.txPrevIndex = Arrays.copyOfRange(payload, 32, 36);
+    }
+
+    public Sha256Hash getId() {
+        return id;
     }
 }
