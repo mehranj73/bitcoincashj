@@ -4849,7 +4849,7 @@ public final class Protos {
        * <code>optional .wallet.EncryptedData encrypted_data = 6;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.EncryptedData, org.bitcoincashj.wallet.Protos.EncryptedData.Builder, org.bitcoincashj.wallet.Protos.EncryptedDataOrBuilder>
+          org.bitcoincashj.wallet.Protos.EncryptedData, org.bitcoincashj.wallet.Protos.EncryptedData.Builder, org.bitcoincashj.wallet.Protos.EncryptedDataOrBuilder> 
           getEncryptedDataFieldBuilder() {
         if (encryptedDataBuilder_ == null) {
           encryptedDataBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -5198,7 +5198,7 @@ public final class Protos {
        * <code>optional .wallet.DeterministicKey deterministic_key = 7;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.DeterministicKey, org.bitcoincashj.wallet.Protos.DeterministicKey.Builder, org.bitcoincashj.wallet.Protos.DeterministicKeyOrBuilder>
+          org.bitcoincashj.wallet.Protos.DeterministicKey, org.bitcoincashj.wallet.Protos.DeterministicKey.Builder, org.bitcoincashj.wallet.Protos.DeterministicKeyOrBuilder> 
           getDeterministicKeyFieldBuilder() {
         if (deterministicKeyBuilder_ == null) {
           deterministicKeyBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -5416,7 +5416,7 @@ public final class Protos {
        * <code>optional .wallet.EncryptedData encrypted_deterministic_seed = 9;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.EncryptedData, org.bitcoincashj.wallet.Protos.EncryptedData.Builder, org.bitcoincashj.wallet.Protos.EncryptedDataOrBuilder>
+          org.bitcoincashj.wallet.Protos.EncryptedData, org.bitcoincashj.wallet.Protos.EncryptedData.Builder, org.bitcoincashj.wallet.Protos.EncryptedDataOrBuilder> 
           getEncryptedDeterministicSeedFieldBuilder() {
         if (encryptedDeterministicSeedBuilder_ == null) {
           encryptedDeterministicSeedBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -8237,7 +8237,7 @@ public final class Protos {
        * <code>optional .wallet.ScriptWitness witness = 6;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.ScriptWitness, org.bitcoincashj.wallet.Protos.ScriptWitness.Builder, org.bitcoincashj.wallet.Protos.ScriptWitnessOrBuilder>
+          org.bitcoincashj.wallet.Protos.ScriptWitness, org.bitcoincashj.wallet.Protos.ScriptWitness.Builder, org.bitcoincashj.wallet.Protos.ScriptWitnessOrBuilder> 
           getWitnessFieldBuilder() {
         if (witnessBuilder_ == null) {
           witnessBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -9462,7 +9462,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.PeerAddress>
+    java.util.List<org.bitcoincashj.wallet.Protos.PeerAddress> 
         getBroadcastByList();
     /**
      * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
@@ -9475,7 +9475,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder> 
         getBroadcastByOrBuilderList();
     /**
      * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
@@ -10099,7 +10099,7 @@ public final class Protos {
      * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder> 
         getBroadcastByOrBuilderList() {
       return broadcastBy_;
     }
@@ -11117,7 +11117,7 @@ public final class Protos {
       /**
        * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
        */
-      public java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder>
+      public java.util.List<? extends org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder> 
            getBroadcastByOrBuilderList() {
         if (broadcastByBuilder_ != null) {
           return broadcastByBuilder_.getMessageOrBuilderList();
@@ -11143,12 +11143,12 @@ public final class Protos {
       /**
        * <code>repeated .wallet.PeerAddress broadcast_by = 6;</code>
        */
-      public java.util.List<org.bitcoincashj.wallet.Protos.PeerAddress.Builder>
+      public java.util.List<org.bitcoincashj.wallet.Protos.PeerAddress.Builder> 
            getBroadcastByBuilderList() {
         return getBroadcastByFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.PeerAddress, org.bitcoincashj.wallet.Protos.PeerAddress.Builder, org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder>
+          org.bitcoincashj.wallet.Protos.PeerAddress, org.bitcoincashj.wallet.Protos.PeerAddress.Builder, org.bitcoincashj.wallet.Protos.PeerAddressOrBuilder> 
           getBroadcastByFieldBuilder() {
         if (broadcastByBuilder_ == null) {
           broadcastByBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -11412,7 +11412,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.TransactionInput>
+    java.util.List<org.bitcoincashj.wallet.Protos.TransactionInput> 
         getTransactionInputList();
     /**
      * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
@@ -11425,7 +11425,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder> 
         getTransactionInputOrBuilderList();
     /**
      * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
@@ -11436,7 +11436,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.TransactionOutput>
+    java.util.List<org.bitcoincashj.wallet.Protos.TransactionOutput> 
         getTransactionOutputList();
     /**
      * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
@@ -11449,7 +11449,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder> 
         getTransactionOutputOrBuilderList();
     /**
      * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
@@ -12349,7 +12349,7 @@ public final class Protos {
      * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder> 
         getTransactionInputOrBuilderList() {
       return transactionInput_;
     }
@@ -12389,7 +12389,7 @@ public final class Protos {
      * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder> 
         getTransactionOutputOrBuilderList() {
       return transactionOutput_;
     }
@@ -13886,7 +13886,7 @@ public final class Protos {
       /**
        * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
        */
-      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder>
+      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder> 
            getTransactionInputOrBuilderList() {
         if (transactionInputBuilder_ != null) {
           return transactionInputBuilder_.getMessageOrBuilderList();
@@ -13912,12 +13912,12 @@ public final class Protos {
       /**
        * <code>repeated .wallet.TransactionInput transaction_input = 6;</code>
        */
-      public java.util.List<org.bitcoincashj.wallet.Protos.TransactionInput.Builder>
+      public java.util.List<org.bitcoincashj.wallet.Protos.TransactionInput.Builder> 
            getTransactionInputBuilderList() {
         return getTransactionInputFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.TransactionInput, org.bitcoincashj.wallet.Protos.TransactionInput.Builder, org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder>
+          org.bitcoincashj.wallet.Protos.TransactionInput, org.bitcoincashj.wallet.Protos.TransactionInput.Builder, org.bitcoincashj.wallet.Protos.TransactionInputOrBuilder> 
           getTransactionInputFieldBuilder() {
         if (transactionInputBuilder_ == null) {
           transactionInputBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -14126,7 +14126,7 @@ public final class Protos {
       /**
        * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
        */
-      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder>
+      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder> 
            getTransactionOutputOrBuilderList() {
         if (transactionOutputBuilder_ != null) {
           return transactionOutputBuilder_.getMessageOrBuilderList();
@@ -14152,12 +14152,12 @@ public final class Protos {
       /**
        * <code>repeated .wallet.TransactionOutput transaction_output = 7;</code>
        */
-      public java.util.List<org.bitcoincashj.wallet.Protos.TransactionOutput.Builder>
+      public java.util.List<org.bitcoincashj.wallet.Protos.TransactionOutput.Builder> 
            getTransactionOutputBuilderList() {
         return getTransactionOutputFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.TransactionOutput, org.bitcoincashj.wallet.Protos.TransactionOutput.Builder, org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder>
+          org.bitcoincashj.wallet.Protos.TransactionOutput, org.bitcoincashj.wallet.Protos.TransactionOutput.Builder, org.bitcoincashj.wallet.Protos.TransactionOutputOrBuilder> 
           getTransactionOutputFieldBuilder() {
         if (transactionOutputBuilder_ == null) {
           transactionOutputBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -14513,7 +14513,7 @@ public final class Protos {
        * <code>optional .wallet.TransactionConfidence confidence = 9;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.TransactionConfidence, org.bitcoincashj.wallet.Protos.TransactionConfidence.Builder, org.bitcoincashj.wallet.Protos.TransactionConfidenceOrBuilder>
+          org.bitcoincashj.wallet.Protos.TransactionConfidence, org.bitcoincashj.wallet.Protos.TransactionConfidence.Builder, org.bitcoincashj.wallet.Protos.TransactionConfidenceOrBuilder> 
           getConfidenceFieldBuilder() {
         if (confidenceBuilder_ == null) {
           confidenceBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -14712,7 +14712,7 @@ public final class Protos {
        * <code>optional .wallet.ExchangeRate exchange_rate = 12;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.ExchangeRate, org.bitcoincashj.wallet.Protos.ExchangeRate.Builder, org.bitcoincashj.wallet.Protos.ExchangeRateOrBuilder>
+          org.bitcoincashj.wallet.Protos.ExchangeRate, org.bitcoincashj.wallet.Protos.ExchangeRate.Builder, org.bitcoincashj.wallet.Protos.ExchangeRateOrBuilder> 
           getExchangeRateFieldBuilder() {
         if (exchangeRateBuilder_ == null) {
           exchangeRateBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -17626,7 +17626,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Key key = 3;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.Key>
+    java.util.List<org.bitcoincashj.wallet.Protos.Key> 
         getKeyList();
     /**
      * <code>repeated .wallet.Key key = 3;</code>
@@ -17639,7 +17639,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Key key = 3;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder> 
         getKeyOrBuilderList();
     /**
      * <code>repeated .wallet.Key key = 3;</code>
@@ -17650,7 +17650,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Transaction transaction = 4;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.Transaction>
+    java.util.List<org.bitcoincashj.wallet.Protos.Transaction> 
         getTransactionList();
     /**
      * <code>repeated .wallet.Transaction transaction = 4;</code>
@@ -17663,7 +17663,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Transaction transaction = 4;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder> 
         getTransactionOrBuilderList();
     /**
      * <code>repeated .wallet.Transaction transaction = 4;</code>
@@ -17674,7 +17674,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Script watched_script = 15;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.Script>
+    java.util.List<org.bitcoincashj.wallet.Protos.Script> 
         getWatchedScriptList();
     /**
      * <code>repeated .wallet.Script watched_script = 15;</code>
@@ -17687,7 +17687,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Script watched_script = 15;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.ScriptOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.ScriptOrBuilder> 
         getWatchedScriptOrBuilderList();
     /**
      * <code>repeated .wallet.Script watched_script = 15;</code>
@@ -17747,7 +17747,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Extension extension = 10;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.Extension>
+    java.util.List<org.bitcoincashj.wallet.Protos.Extension> 
         getExtensionList();
     /**
      * <code>repeated .wallet.Extension extension = 10;</code>
@@ -17760,7 +17760,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Extension extension = 10;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.ExtensionOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.ExtensionOrBuilder> 
         getExtensionOrBuilderList();
     /**
      * <code>repeated .wallet.Extension extension = 10;</code>
@@ -17823,7 +17823,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Tag tags = 16;</code>
      */
-    java.util.List<org.bitcoincashj.wallet.Protos.Tag>
+    java.util.List<org.bitcoincashj.wallet.Protos.Tag> 
         getTagsList();
     /**
      * <code>repeated .wallet.Tag tags = 16;</code>
@@ -17836,7 +17836,7 @@ public final class Protos {
     /**
      * <code>repeated .wallet.Tag tags = 16;</code>
      */
-    java.util.List<? extends org.bitcoincashj.wallet.Protos.TagOrBuilder>
+    java.util.List<? extends org.bitcoincashj.wallet.Protos.TagOrBuilder> 
         getTagsOrBuilderList();
     /**
      * <code>repeated .wallet.Tag tags = 16;</code>
@@ -18325,7 +18325,7 @@ public final class Protos {
      * <code>repeated .wallet.Key key = 3;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder> 
         getKeyOrBuilderList() {
       return key_;
     }
@@ -18365,7 +18365,7 @@ public final class Protos {
      * <code>repeated .wallet.Transaction transaction = 4;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder> 
         getTransactionOrBuilderList() {
       return transaction_;
     }
@@ -18405,7 +18405,7 @@ public final class Protos {
      * <code>repeated .wallet.Script watched_script = 15;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.ScriptOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.ScriptOrBuilder> 
         getWatchedScriptOrBuilderList() {
       return watchedScript_;
     }
@@ -18521,7 +18521,7 @@ public final class Protos {
      * <code>repeated .wallet.Extension extension = 10;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.ExtensionOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.ExtensionOrBuilder> 
         getExtensionOrBuilderList() {
       return extension_;
     }
@@ -18652,7 +18652,7 @@ public final class Protos {
      * <code>repeated .wallet.Tag tags = 16;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TagOrBuilder>
+    public java.util.List<? extends org.bitcoincashj.wallet.Protos.TagOrBuilder> 
         getTagsOrBuilderList() {
       return tags_;
     }
@@ -20012,7 +20012,7 @@ public final class Protos {
       /**
        * <code>repeated .wallet.Key key = 3;</code>
        */
-      public java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder>
+      public java.util.List<? extends org.bitcoincashj.wallet.Protos.KeyOrBuilder> 
            getKeyOrBuilderList() {
         if (keyBuilder_ != null) {
           return keyBuilder_.getMessageOrBuilderList();
@@ -20038,12 +20038,12 @@ public final class Protos {
       /**
        * <code>repeated .wallet.Key key = 3;</code>
        */
-      public java.util.List<org.bitcoincashj.wallet.Protos.Key.Builder>
+      public java.util.List<org.bitcoincashj.wallet.Protos.Key.Builder> 
            getKeyBuilderList() {
         return getKeyFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.Key, org.bitcoincashj.wallet.Protos.Key.Builder, org.bitcoincashj.wallet.Protos.KeyOrBuilder>
+          org.bitcoincashj.wallet.Protos.Key, org.bitcoincashj.wallet.Protos.Key.Builder, org.bitcoincashj.wallet.Protos.KeyOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
           keyBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -20252,7 +20252,7 @@ public final class Protos {
       /**
        * <code>repeated .wallet.Transaction transaction = 4;</code>
        */
-      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder>
+      public java.util.List<? extends org.bitcoincashj.wallet.Protos.TransactionOrBuilder> 
            getTransactionOrBuilderList() {
         if (transactionBuilder_ != null) {
           return transactionBuilder_.getMessageOrBuilderList();
@@ -20278,12 +20278,12 @@ public final class Protos {
       /**
        * <code>repeated .wallet.Transaction transaction = 4;</code>
        */
-      public java.util.List<org.bitcoincashj.wallet.Protos.Transaction.Builder>
+      public java.util.List<org.bitcoincashj.wallet.Protos.Transaction.Builder> 
            getTransactionBuilderList() {
         return getTransactionFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincashj.wallet.Protos.Transaction, org.bitcoincashj.wallet.Protos.Transaction.Builder, org.bitcoincashj.wallet.Protos.TransactionOrBuilder>
+          org.bitcoincashj.wallet.Protos.Transaction, org.bitcoincashj.wallet.Protos.Transaction.Builder, org.bitcoincashj.wallet.Protos.TransactionOrBuilder> 
           getTransactionFieldBuilder() {
         if (transactionBuilder_ == null) {
           transactionBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -22578,8 +22578,8 @@ public final class Protos {
       "\";\n\016EncryptionType\022\017\n\013UNENCRYPTED\020\001\022\030\n\024E" +
       "NCRYPTED_SCRYPT_AES\020\002\"R\n\014ExchangeRate\022\022\n" +
       "\ncoin_value\030\001 \002(\003\022\022\n\nfiat_value\030\002 \002(\003\022\032\n" +
-      "\022fiat_currency_code\030\003 \002(\tB\035\n\023org.bitcoin" +
-      "j.walletB\006Protos"
+      "\022fiat_currency_code\030\003 \002(\tB!\n\027org.bitcoin" +
+      "cashj.walletB\006Protos"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,

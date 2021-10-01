@@ -760,7 +760,7 @@ public final class Protos {
      *
      * <code>repeated .payments.Output outputs = 2;</code>
      */
-    java.util.List<org.bitcoincash.protocols.payments.Protos.Output>
+    java.util.List<org.bitcoincash.protocols.payments.Protos.Output> 
         getOutputsList();
     /**
      * <pre>
@@ -785,7 +785,7 @@ public final class Protos {
      *
      * <code>repeated .payments.Output outputs = 2;</code>
      */
-    java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+    java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
         getOutputsOrBuilderList();
     /**
      * <pre>
@@ -1122,7 +1122,7 @@ public final class Protos {
      * <code>repeated .payments.Output outputs = 2;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+    public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
         getOutputsOrBuilderList() {
       return outputs_;
     }
@@ -2242,7 +2242,7 @@ public final class Protos {
        *
        * <code>repeated .payments.Output outputs = 2;</code>
        */
-      public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+      public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
            getOutputsOrBuilderList() {
         if (outputsBuilder_ != null) {
           return outputsBuilder_.getMessageOrBuilderList();
@@ -2280,12 +2280,12 @@ public final class Protos {
        *
        * <code>repeated .payments.Output outputs = 2;</code>
        */
-      public java.util.List<org.bitcoincash.protocols.payments.Protos.Output.Builder>
+      public java.util.List<org.bitcoincash.protocols.payments.Protos.Output.Builder> 
            getOutputsBuilderList() {
         return getOutputsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincash.protocols.payments.Protos.Output, org.bitcoincash.protocols.payments.Protos.Output.Builder, org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+          org.bitcoincash.protocols.payments.Protos.Output, org.bitcoincash.protocols.payments.Protos.Output.Builder, org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
           getOutputsFieldBuilder() {
         if (outputsBuilder_ == null) {
           outputsBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -4609,7 +4609,7 @@ public final class Protos {
      *
      * <code>repeated .payments.Output refund_to = 3;</code>
      */
-    java.util.List<org.bitcoincash.protocols.payments.Protos.Output>
+    java.util.List<org.bitcoincash.protocols.payments.Protos.Output> 
         getRefundToList();
     /**
      * <pre>
@@ -4634,7 +4634,7 @@ public final class Protos {
      *
      * <code>repeated .payments.Output refund_to = 3;</code>
      */
-    java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+    java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
         getRefundToOrBuilderList();
     /**
      * <pre>
@@ -4879,7 +4879,7 @@ public final class Protos {
      * <code>repeated .payments.Output refund_to = 3;</code>
      */
     @java.lang.Override
-    public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+    public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
         getRefundToOrBuilderList() {
       return refundTo_;
     }
@@ -5845,7 +5845,7 @@ public final class Protos {
        *
        * <code>repeated .payments.Output refund_to = 3;</code>
        */
-      public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+      public java.util.List<? extends org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
            getRefundToOrBuilderList() {
         if (refundToBuilder_ != null) {
           return refundToBuilder_.getMessageOrBuilderList();
@@ -5883,12 +5883,12 @@ public final class Protos {
        *
        * <code>repeated .payments.Output refund_to = 3;</code>
        */
-      public java.util.List<org.bitcoincash.protocols.payments.Protos.Output.Builder>
+      public java.util.List<org.bitcoincash.protocols.payments.Protos.Output.Builder> 
            getRefundToBuilderList() {
         return getRefundToFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilderV3<
-          org.bitcoincash.protocols.payments.Protos.Output, org.bitcoincash.protocols.payments.Protos.Output.Builder, org.bitcoincash.protocols.payments.Protos.OutputOrBuilder>
+          org.bitcoincash.protocols.payments.Protos.Output, org.bitcoincash.protocols.payments.Protos.Output.Builder, org.bitcoincash.protocols.payments.Protos.OutputOrBuilder> 
           getRefundToFieldBuilder() {
         if (refundToBuilder_ == null) {
           refundToBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
@@ -6825,7 +6825,7 @@ public final class Protos {
        * <code>required .payments.Payment payment = 1;</code>
        */
       private com.google.protobuf.SingleFieldBuilderV3<
-          org.bitcoincash.protocols.payments.Protos.Payment, org.bitcoincash.protocols.payments.Protos.Payment.Builder, org.bitcoincash.protocols.payments.Protos.PaymentOrBuilder>
+          org.bitcoincash.protocols.payments.Protos.Payment, org.bitcoincash.protocols.payments.Protos.Payment.Builder, org.bitcoincash.protocols.payments.Protos.PaymentOrBuilder> 
           getPaymentFieldBuilder() {
         if (paymentBuilder_ == null) {
           paymentBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -7052,8 +7052,8 @@ public final class Protos {
       "ctions\030\002 \003(\014\022#\n\trefund_to\030\003 \003(\0132\020.paymen" +
       "ts.Output\022\014\n\004memo\030\004 \001(\t\">\n\nPaymentACK\022\"\n" +
       "\007payment\030\001 \002(\0132\021.payments.Payment\022\014\n\004mem" +
-      "o\030\002 \001(\tB(\n\036org.bitcoin.protocols.payment" +
-      "sB\006Protos"
+      "o\030\002 \001(\tB,\n\"org.bitcoincash.protocols.pay" +
+      "mentsB\006Protos"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
